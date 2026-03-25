@@ -62,7 +62,7 @@ export default function ClientDetailPage() {
       if (allFarms) {
         const farms = allFarms as unknown as Farm[];
         setAssignedFarms(farms.filter((f) => f.client_id === clientId));
-        setUnassignedFarms(farms.filter((f) => !f.client_id || f.client_id !== clientId));
+        setUnassignedFarms(farms.filter((f) => !f.client_id));
       }
 
       setLoading(false);

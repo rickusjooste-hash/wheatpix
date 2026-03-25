@@ -6,6 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 import StageSelector from "@/components/inspections/StageSelector";
 import type { InspectionStage } from "@/lib/inspection-utils";
 
+interface ClientRow {
+  id: string;
+  name: string;
+}
+
 interface FarmRow {
   id: string;
   name: string;
@@ -16,13 +21,15 @@ export default function NewInspectionPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const [clients, setClients] = useState<ClientRow[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [farms, setFarms] = useState<FarmRow[]>([]);
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [stages, setStages] = useState<InspectionStage[]>([]);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user's farms
+  // Load clients
   useEffect(() => {
     async function load() {
       const {
@@ -34,17 +41,16 @@ export default function NewInspectionPage() {
         return;
       }
 
-      // Query farms directly — RLS filters based on role
-      const { data: farmData } = await supabase
-        .from("farms" as never)
-        .select("id, name, client_id" as never)
+      const { data: clientData } = await supabase
+        .from("clients" as never)
+        .select("id, name" as never)
         .order("name" as never);
 
-      if (farmData && farmData.length > 0) {
-        const fd = farmData as unknown as FarmRow[];
-        setFarms(fd);
-        if (fd.length === 1) {
-          setSelectedFarmId(fd[0].id);
+      if (clientData && clientData.length > 0) {
+        const cd = clientData as unknown as ClientRow[];
+        setClients(cd);
+        if (cd.length === 1) {
+          setSelectedClientId(cd[0].id);
         }
       }
       setLoading(false);
@@ -52,6 +58,33 @@ export default function NewInspectionPage() {
 
     load();
   }, [supabase]);
+
+  // Load farms when client changes
+  useEffect(() => {
+    if (!selectedClientId) {
+      setFarms([]);
+      setSelectedFarmId(null);
+      return;
+    }
+
+    async function loadFarms() {
+      const { data: farmData } = await supabase
+        .from("farms" as never)
+        .select("id, name, client_id" as never)
+        .eq("client_id" as never, selectedClientId as never)
+        .order("name" as never);
+
+      if (farmData) {
+        const fd = farmData as unknown as FarmRow[];
+        setFarms(fd);
+        if (fd.length === 1) {
+          setSelectedFarmId(fd[0].id);
+        }
+      }
+    }
+
+    loadFarms();
+  }, [supabase, selectedClientId]);
 
   // Load stages when farm changes
   useEffect(() => {
@@ -110,7 +143,27 @@ export default function NewInspectionPage() {
     router.push(`/inspections/${selectedStageId}?farm=${selectedFarmId}`);
   };
 
-  const selectedFarm = farms.find((f) => f.id === selectedFarmId);
+  const selectedClient = clients.find((c) => c.id === selectedClientId);
+
+  const btnStyle = (selected: boolean): React.CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    padding: "14px 18px",
+    background: selected ? "#1a2a1a" : "#111111",
+    border: selected ? "2px solid #4a9a4a" : "2px solid #222222",
+    borderRadius: "10px",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+  });
+
+  const labelStyle = (selected: boolean): React.CSSProperties => ({
+    fontSize: "15px",
+    fontWeight: 600,
+    color: selected ? "#6dbb6d" : "#cccccc",
+    fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+  });
 
   if (loading) {
     return (
@@ -133,7 +186,7 @@ export default function NewInspectionPage() {
     );
   }
 
-  if (farms.length === 0) {
+  if (clients.length === 0) {
     return (
       <div
         style={{
@@ -151,7 +204,7 @@ export default function NewInspectionPage() {
           textAlign: "center",
         }}
       >
-        Geen plase gevind nie. Kontak jou administrateur.
+        Geen kliënte gevind nie. Kontak jou administrateur.
       </div>
     );
   }
@@ -195,7 +248,7 @@ export default function NewInspectionPage() {
             fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
           }}
         >
-          Kamp Inspeksie
+          Onkruid Inspeksie
         </div>
         <div
           style={{
@@ -213,17 +266,55 @@ export default function NewInspectionPage() {
         </div>
       </div>
 
-      {/* Farm selector — only show if multiple farms */}
-      {farms.length > 1 && (
+      {/* Step 1: Client picker */}
+      {clients.length > 1 ? (
         <div style={{ padding: "0 24px", marginBottom: "16px" }}>
+          <div style={{ fontSize: "14px", fontWeight: 600, color: "#cccccc", marginBottom: "12px" }}>
+            Kies kliënt
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {clients.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setSelectedClientId(c.id);
+                  setSelectedFarmId(null);
+                  setSelectedStageId(null);
+                }}
+                style={btnStyle(selectedClientId === c.id)}
+              >
+                <span style={labelStyle(selectedClientId === c.id)}>
+                  {c.name}
+                </span>
+                {selectedClientId === c.id && (
+                  <span style={{ color: "#4a9a4a", fontSize: "18px" }}>✓</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        selectedClient && (
           <div
             style={{
-              fontSize: "14px",
-              fontWeight: 600,
-              color: "#cccccc",
-              marginBottom: "12px",
+              padding: "0 24px",
+              marginBottom: "8px",
+              fontSize: "13px",
+              color: "#4a9a4a",
+              fontFamily: "var(--font-jetbrains), monospace",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
             }}
           >
+            ● {selectedClient.name}
+          </div>
+        )
+      )}
+
+      {/* Step 2: Farm picker — only after client selected */}
+      {selectedClientId && farms.length > 0 && (
+        <div style={{ padding: "0 24px", marginBottom: "16px" }}>
+          <div style={{ fontSize: "14px", fontWeight: 600, color: "#cccccc", marginBottom: "12px" }}>
             Kies plaas
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -234,33 +325,9 @@ export default function NewInspectionPage() {
                   setSelectedFarmId(fm.id);
                   setSelectedStageId(null);
                 }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  width: "100%",
-                  padding: "14px 18px",
-                  background:
-                    selectedFarmId === fm.id ? "#1a2a1a" : "#111111",
-                  border:
-                    selectedFarmId === fm.id
-                      ? "2px solid #4a9a4a"
-                      : "2px solid #222222",
-                  borderRadius: "10px",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
+                style={btnStyle(selectedFarmId === fm.id)}
               >
-                <span
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    color:
-                      selectedFarmId === fm.id ? "#6dbb6d" : "#cccccc",
-                    fontFamily:
-                      "var(--font-jetbrains), 'JetBrains Mono', monospace",
-                  }}
-                >
+                <span style={labelStyle(selectedFarmId === fm.id)}>
                   {fm.name}
                 </span>
                 {selectedFarmId === fm.id && (
@@ -272,22 +339,7 @@ export default function NewInspectionPage() {
         </div>
       )}
 
-      {/* Show selected farm name when auto-selected */}
-      {farms.length === 1 && selectedFarm && (
-        <div
-          style={{
-            padding: "0 24px",
-            marginBottom: "8px",
-            fontSize: "16px",
-            fontWeight: 700,
-            color: "#eeeeee",
-          }}
-        >
-          {selectedFarm.name}
-        </div>
-      )}
-
-      {/* Stage selector — only show after farm is selected */}
+      {/* Step 3: Stage selector — only after farm selected */}
       {selectedFarmId && (
         <StageSelector
           stages={stages}
@@ -298,6 +350,7 @@ export default function NewInspectionPage() {
         />
       )}
 
+      {/* Start button */}
       <div style={{ padding: "24px", marginTop: "auto" }}>
         <button
           onClick={handleStart}

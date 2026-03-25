@@ -1,26 +1,50 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* WheatPix brand colours */
+  --color-wp-gold: #F5C842;
+  --color-wp-amber: #D4890A;
+  --color-wp-chaff: #8B5E04;
+  --color-wp-green: #2D5A1B;
+  --color-wp-night: #0E1A07;
+  --color-wp-deep: #1A2E0D;
+  --color-wp-parchment: #F5EDDA;
+  --color-wp-cream: #FBF6EC;
+  --color-wp-soil: #3A2006;
+  --color-wp-sky: #A8C5DA;
+
+  /* Inspection dark theme */
+  --color-insp-bg: #0a0a0a;
+  --color-insp-surface: #111111;
+  --color-insp-elevated: #1a1a1a;
+  --color-insp-border: #222222;
+  --color-insp-border-strong: #333333;
+
+  /* Typography */
+  --font-serif: 'DM Serif Display', serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-sans: 'Outfit', sans-serif;
+  --font-data: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes tooltipIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #0a0a0a;
+  color: #eeeeee;
+  font-family: var(--font-sans);
 }

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grain" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F5C842"/>
+      <stop offset="50%" stop-color="#D4890A"/>
+      <stop offset="100%" stop-color="#8B5E04"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background — deep night field -->
+  <rect width="512" height="512" rx="112" fill="#0E1A07"/>
+
+  <!-- Subtle pixel grid -->
+  <g stroke="rgba(212,137,10,0.07)" stroke-width="1">
+    <line x1="0" y1="51.2"  x2="512" y2="51.2"/>
+    <line x1="0" y1="102.4" x2="512" y2="102.4"/>
+    <line x1="0" y1="153.6" x2="512" y2="153.6"/>
+    <line x1="0" y1="204.8" x2="512" y2="204.8"/>
+    <line x1="0" y1="256"   x2="512" y2="256"/>
+    <line x1="0" y1="307.2" x2="512" y2="307.2"/>
+    <line x1="0" y1="358.4" x2="512" y2="358.4"/>
+    <line x1="0" y1="409.6" x2="512" y2="409.6"/>
+    <line x1="0" y1="460.8" x2="512" y2="460.8"/>
+    <line x1="51.2"  y1="0" x2="51.2"  y2="512"/>
+    <line x1="102.4" y1="0" x2="102.4" y2="512"/>
+    <line x1="153.6" y1="0" x2="153.6" y2="512"/>
+    <line x1="204.8" y1="0" x2="204.8" y2="512"/>
+    <line x1="256"   y1="0" x2="256"   y2="512"/>
+    <line x1="307.2" y1="0" x2="307.2" y2="512"/>
+    <line x1="358.4" y1="0" x2="358.4" y2="512"/>
+    <line x1="409.6" y1="0" x2="409.6" y2="512"/>
+    <line x1="460.8" y1="0" x2="460.8" y2="512"/>
+  </g>
+
+  <!-- Pixel wheat ear — 5 col x 9 row, pixel=48px, gap=10px -->
+  <!-- Col positions: c0=139, c1=197, c2=255, c3=313, c4=371 -->
+  <!-- Row positions: r0=34, r1=92, r2=150, r3=208, r4=266, r5=324, r6=382, r7=440 -->
+
+  <!-- Row 0 — tip -->
+  <rect x="231" y="34"  width="50" height="50" rx="8" fill="#F5C842" opacity="0.75"/>
+
+  <!-- Row 1 — grain pair 1 -->
+  <rect x="173" y="94"  width="50" height="50" rx="8" fill="url(#grain)"/>
+  <rect x="231" y="94"  width="50" height="50" rx="8" fill="url(#grain)"/>
+  <rect x="289" y="94"  width="50" height="50" rx="8" fill="url(#grain)"/>
+
+  <!-- Row 2 — rachis -->
+  <rect x="231" y="154" width="50" height="50" rx="8" fill="#D4890A" opacity="0.4"/>
+
+  <!-- Row 3 — grain pair 2 (widest) -->
+  <rect x="115" y="214" width="50" height="50" rx="8" fill="url(#grain)"/>
+  <rect x="173" y="214" width="50" height="50" rx="8" fill="url(#grain)"/>
+  <rect x="231" y="214" width="50" height="50" rx="8" fill="url(#grain)"/>
+  <rect x="289" y="214" width="50" height="50" rx="8" fill="url(#grain)"/>
+  <rect x="347" y="214" width="50" height="50" rx="8" fill="url(#grain)"/>
+
+  <!-- Row 4 — rachis -->
+  <rect x="231" y="274" width="50" height="50" rx="8" fill="#D4890A" opacity="0.4"/>
+
+  <!-- Row 5 — grain pair 3 -->
+  <rect x="173" y="334" width="50" height="50" rx="8" fill="url(#grain)"/>
+  <rect x="231" y="334" width="50" height="50" rx="8" fill="url(#grain)"/>
+  <rect x="289" y="334" width="50" height="50" rx="8" fill="url(#grain)"/>
+
+  <!-- Row 6 — stem -->
+  <rect x="231" y="394" width="50" height="50" rx="8" fill="#6B3E06" opacity="0.65"/>
+
+  <!-- Row 7 — stem base -->
+  <rect x="231" y="454" width="50" height="50" rx="8" fill="#4A2A04" opacity="0.5"/>
+
+  <!-- Highlight glints -->
+  <circle cx="256" cy="59"  r="8"  fill="#FFF8D0" opacity="0.55"/>
+  <circle cx="256" cy="239" r="10" fill="#FFF8D0" opacity="0.35"/>
+  <circle cx="198" cy="119" r="5"  fill="#FFF8D0" opacity="0.3"/>
+  <circle cx="314" cy="119" r="5"  fill="#FFF8D0" opacity="0.3"/>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#0E1A07"/>
+  <!-- Pixel wheat — simplified for 32px, using 4px pixels with 1px gap -->
+  <!-- 5 cols x 8 rows, px=4, gap=1 -->
+  <!-- center col at 14, total width=5*4+4=24, start x=4 -->
+  <!-- Col positions: 4,9,14,19,24 -->
+  <!-- Row positions: 2,7,12,17,22,27 -->
+  <!-- tip -->
+  <rect x="14" y="2"  width="4" height="4" rx="1" fill="#F5C842" opacity="0.8"/>
+  <!-- row1 -->
+  <rect x="9"  y="7"  width="4" height="4" rx="1" fill="#D4890A"/>
+  <rect x="14" y="7"  width="4" height="4" rx="1" fill="#D4890A"/>
+  <rect x="19" y="7"  width="4" height="4" rx="1" fill="#D4890A"/>
+  <!-- rachis -->
+  <rect x="14" y="12" width="4" height="4" rx="1" fill="#D4890A" opacity="0.4"/>
+  <!-- row3 widest -->
+  <rect x="4"  y="17" width="4" height="4" rx="1" fill="#D4890A"/>
+  <rect x="9"  y="17" width="4" height="4" rx="1" fill="#D4890A"/>
+  <rect x="14" y="17" width="4" height="4" rx="1" fill="#D4890A"/>
+  <rect x="19" y="17" width="4" height="4" rx="1" fill="#D4890A"/>
+  <rect x="24" y="17" width="4" height="4" rx="1" fill="#D4890A"/>
+  <!-- row4 -->
+  <rect x="14" y="22" width="4" height="4" rx="1" fill="#8B5E04" opacity="0.5"/>
+  <!-- stem -->
+  <rect x="14" y="27" width="4" height="4" rx="1" fill="#6B3E06" opacity="0.55"/>
+  <!-- glint -->
+  <circle cx="16" cy="4" r="1" fill="#FDEEA0" opacity="0.7"/>
+</svg>

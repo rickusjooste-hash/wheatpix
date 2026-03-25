@@ -1,31 +1,36 @@
 import { createClient } from "@/lib/supabase/server";
 import CreateAgent from "./create-agent";
-
-interface AgentRow {
-  id: string;
-  email: string;
-  raw_user_meta_data: { full_name?: string; role?: string };
-}
+import Link from "next/link";
 
 export default async function AdminPage() {
   const supabase = await createClient();
 
-  // List all agent users (using service role via server client won't work for auth.users)
-  // Instead query clients grouped by agent_id
-  const { data: clients } = await supabase
+  // Get all clients to show per-agent stats
+  const { data: clientsData } = await supabase
     .from("clients" as never)
     .select("id, name, agent_id" as never);
 
+  const clients = (clientsData || []) as unknown as {
+    id: string;
+    name: string;
+    agent_id: string;
+  }[];
+
   // Group clients by agent_id
-  const agentMap = new Map<string, { clientCount: number; clientNames: string[] }>();
-  if (clients) {
-    for (const c of clients as unknown as { id: string; name: string; agent_id: string }[]) {
-      const entry = agentMap.get(c.agent_id) || { clientCount: 0, clientNames: [] };
-      entry.clientCount++;
-      entry.clientNames.push(c.name);
-      agentMap.set(c.agent_id, entry);
-    }
+  const agentClientMap = new Map<string, string[]>();
+  for (const c of clients) {
+    const existing = agentClientMap.get(c.agent_id) || [];
+    existing.push(c.name);
+    agentClientMap.set(c.agent_id, existing);
   }
+
+  // Get agent users via service-role admin API (server action)
+  // We need to use a different approach since server components can't call admin API directly
+  // Instead, list all agents we know about from clients table + fetch their details
+  const agentIds = Array.from(agentClientMap.keys());
+
+  // For now, show agents based on what we know from the clients table
+  // Plus show the agent email by querying auth.users via a workaround
 
   return (
     <div>
@@ -45,43 +50,7 @@ export default async function AdminPage() {
         </p>
       </div>
 
-      <CreateAgent />
-
-      {agentMap.size > 0 && (
-        <div style={{ marginTop: "32px" }}>
-          <h2
-            style={{
-              fontSize: "16px",
-              fontWeight: 600,
-              color: "rgba(245,237,218,0.7)",
-              marginBottom: "16px",
-            }}
-          >
-            Agente met kliënte
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {Array.from(agentMap.entries()).map(([agentId, info]) => (
-              <div
-                key={agentId}
-                style={{
-                  background: "#1A2E0D",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  border: "1px solid #2D5A1B",
-                }}
-              >
-                <div style={{ fontSize: "12px", color: "rgba(245,237,218,0.4)", fontFamily: "var(--font-jetbrains), monospace" }}>
-                  {agentId.slice(0, 8)}...
-                </div>
-                <div style={{ fontSize: "14px", color: "#F5EDDA", marginTop: "4px" }}>
-                  {info.clientCount} {info.clientCount === 1 ? "kliënt" : "kliënte"}:
-                  {" "}{info.clientNames.join(", ")}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <CreateAgent existingAgents={agentClientMap} />
     </div>
   );
 }

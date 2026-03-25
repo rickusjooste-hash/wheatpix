@@ -21,8 +21,17 @@ const dmSerif = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "WheatPix — Kamp Inspeksie",
+  title: "WheatPix — Gewasbeskerming",
   description: "Crop protection intelligence for grain farms",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "WheatPix",
+  },
+  icons: {
+    apple: "/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -43,7 +52,20 @@ export default function RootLayout({
       lang="af"
       className={`${outfit.variable} ${jetbrainsMono.variable} ${dmSerif.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
+            `,
+          }}
+        />
+      </body>
     </html>
   );
 }

@@ -169,7 +169,22 @@ export default function NewInspectionPage() {
         flexDirection: "column",
       }}
     >
-      <div style={{ padding: "40px 24px 20px" }}>
+      <div style={{ padding: "20px 24px 20px" }}>
+        <button
+          onClick={() => router.push("/app")}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#555555",
+            fontSize: "12px",
+            cursor: "pointer",
+            padding: "0",
+            marginBottom: "16px",
+            fontFamily: "var(--font-jetbrains), monospace",
+          }}
+        >
+          ← Terug
+        </button>
         <div
           style={{
             fontSize: "11px",

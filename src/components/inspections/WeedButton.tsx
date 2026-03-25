@@ -14,26 +14,30 @@ export default function WeedButton({ weed, severity, onTap }: WeedButtonProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
+  const tooltipShowing = useRef(false);
 
   const startPress = useCallback(() => {
     didLongPress.current = false;
     timerRef.current = setTimeout(() => {
       didLongPress.current = true;
+      tooltipShowing.current = true;
       setShowTooltip(true);
     }, 400);
   }, []);
 
   const endPress = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (showTooltip) {
+    if (tooltipShowing.current) {
+      tooltipShowing.current = false;
       setShowTooltip(false);
     } else if (!didLongPress.current) {
       onTap(weed.id);
     }
-  }, [showTooltip, onTap, weed.id]);
+  }, [onTap, weed.id]);
 
   const cancelPress = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    tooltipShowing.current = false;
     setShowTooltip(false);
   }, []);
 

@@ -47,4 +47,20 @@ body {
   background: #0a0a0a;
   color: #eeeeee;
   font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Prevent iOS text selection and callout on interactive elements */
+button, [role="button"] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Specifically target weed grid buttons to prevent all iOS long-press behavior */
+.weed-grid button {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }

@@ -97,7 +97,10 @@ export default function WeedButton({ weed, severity, onTap }: WeedButtonProps) {
           position: "relative",
           overflow: "hidden",
           WebkitTapHighlightColor: "transparent",
+          WebkitTouchCallout: "none",
+          WebkitUserSelect: "none",
           userSelect: "none",
+          touchAction: "manipulation",
         }}
       >
         {severity > 0 && (

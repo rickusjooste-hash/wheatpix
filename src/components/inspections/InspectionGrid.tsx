@@ -34,6 +34,7 @@ export default function InspectionGrid({
           ▌ Grasse
         </div>
         <div
+          className="weed-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(5, 1fr)",
@@ -67,6 +68,7 @@ export default function InspectionGrid({
           ▌ Breeblaar
         </div>
         <div
+          className="weed-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(5, 1fr)",

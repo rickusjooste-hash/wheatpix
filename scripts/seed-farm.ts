@@ -258,15 +258,16 @@ async function main() {
     const blockRows = blocks.map((b, i) => ({
       farm_id: farmId,
       name: b.name,
-      crop: b.crop,
-      cultivar: b.cultivar,
       area_hectares: b.area_hectares,
       geometry: b.geometry,
       sort_order: i,
       is_active: true,
     }));
 
-    const { error: blocksErr } = await supabase.from("blocks").insert(blockRows);
+    const { data: insertedBlocks, error: blocksErr } = await supabase
+      .from("blocks")
+      .insert(blockRows)
+      .select("id, name");
 
     if (blocksErr) {
       console.error(`Failed to insert blocks for ${farmName}:`, blocksErr.message);
@@ -274,6 +275,27 @@ async function main() {
     }
 
     console.log(`  Inserted ${blockRows.length} blocks`);
+
+    // Create 2026 season entries with crop/cultivar from KML
+    const seasonRows = (insertedBlocks || []).map((ib: { id: string; name: string }) => {
+      const original = blocks.find((b) => b.name === ib.name);
+      return {
+        block_id: ib.id,
+        season: 2026,
+        crop: original?.crop ?? null,
+        cultivar: original?.cultivar ?? null,
+        status: "planted",
+      };
+    }).filter((s: { crop: string | null }) => s.crop !== null);
+
+    if (seasonRows.length > 0) {
+      const { error: seasonErr } = await supabase.from("block_seasons").insert(seasonRows);
+      if (seasonErr) {
+        console.error(`Failed to insert seasons for ${farmName}:`, seasonErr.message);
+      } else {
+        console.log(`  Created ${seasonRows.length} season entries for 2026`);
+      }
+    }
   }
 
   console.log(`\nDone! Created 1 client, ${farmGroups.size} farms with ${allBlocks.length} total blocks.`);

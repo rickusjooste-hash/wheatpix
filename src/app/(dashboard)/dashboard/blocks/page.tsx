@@ -3,21 +3,21 @@ import { createClient } from "@/lib/supabase/server";
 interface BlockRow {
   id: string;
   name: string;
-  crop: string | null;
-  cultivar: string | null;
   area_hectares: number | null;
   is_active: boolean;
   farm_id: string;
   farms: { name: string; client_id: string | null };
+  block_seasons: { crop: string | null; cultivar: string | null; season: number; status: string }[];
 }
 
 export default async function BlocksPage() {
   const supabase = await createClient();
+  const currentYear = new Date().getFullYear();
 
-  // Query blocks directly — RLS filters based on role
+  // Query blocks with current season data
   const { data } = await supabase
     .from("blocks" as never)
-    .select("id, name, crop, cultivar, area_hectares, is_active, farm_id, farms (name, client_id)" as never)
+    .select("id, name, area_hectares, is_active, farm_id, farms (name, client_id), block_seasons (crop, cultivar, season, status)" as never)
     .order("sort_order" as never);
 
   const blocks = (data || []) as unknown as BlockRow[];
@@ -109,9 +109,17 @@ export default async function BlocksPage() {
                       <div style={{ fontSize: "15px", fontWeight: 600, color: "#0E1A07" }}>
                         {block.name}
                       </div>
-                      <div style={{ fontSize: "12px", color: "#5C554B", marginTop: "3px" }}>
-                        {block.crop || "—"} · {block.cultivar || "—"}
-                      </div>
+                      {(() => {
+                        const season = block.block_seasons?.find((s) => s.season === currentYear);
+                        return (
+                          <div style={{ fontSize: "12px", color: "#5C554B", marginTop: "3px" }}>
+                            {season?.crop || "—"} · {season?.cultivar || "—"}
+                            {season?.status === "planned" && (
+                              <span style={{ fontSize: "10px", color: "#8C847A", marginLeft: "6px" }}>(beplan)</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                     {block.area_hectares && (
                       <div

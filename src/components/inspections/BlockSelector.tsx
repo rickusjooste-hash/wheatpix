@@ -1,9 +1,10 @@
 "use client";
 
-import type { Block } from "@/lib/inspection-utils";
+import type { Block, BlockSeason } from "@/lib/inspection-utils";
 
 interface BlockSelectorProps {
   blocks: Block[];
+  seasons: Record<string, BlockSeason>; // block_id → current season
   selectedId: string;
   inspectedBlockIds: Set<string>;
   onSelect: (blockId: string) => void;
@@ -12,6 +13,7 @@ interface BlockSelectorProps {
 
 export default function BlockSelector({
   blocks,
+  seasons,
   selectedId,
   inspectedBlockIds,
   onSelect,
@@ -94,7 +96,7 @@ export default function BlockSelector({
                 {b.name}
               </div>
               <div style={{ fontSize: "12px", color: "#666666", marginTop: "2px" }}>
-                {b.crop} — {b.cultivar}
+                {seasons[b.id]?.crop || "—"} — {seasons[b.id]?.cultivar || "—"}
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

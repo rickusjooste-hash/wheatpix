@@ -33,11 +33,20 @@ export interface Block {
   id: string;
   farm_id: string;
   name: string;
-  crop: string | null;
-  cultivar: string | null;
   sort_order: number;
   geometry: { lat: number; lng: number }[] | null;
   is_active: boolean;
+}
+
+export interface BlockSeason {
+  id: string;
+  block_id: string;
+  season: number;
+  crop: string | null;
+  cultivar: string | null;
+  status: "planned" | "planted" | "harvested";
+  yield_ton_per_ha: number | null;
+  notes: string | null;
 }
 
 export interface CampInspection {

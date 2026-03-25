@@ -12,6 +12,7 @@ import InspectionSummary from "@/components/inspections/InspectionSummary";
 import {
   nextSeverity,
   type Block,
+  type BlockSeason,
   type WeedSpecies,
   type WeedData,
   type SeverityLevel,
@@ -27,6 +28,7 @@ export default function ActiveInspectionPage() {
   const farmId = searchParams.get("farm") || "";
 
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [seasons, setSeasons] = useState<Record<string, BlockSeason>>({});
   const [weeds, setWeeds] = useState<WeedSpecies[]>([]);
   const [stage, setStage] = useState<InspectionStage | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string>("");
@@ -67,6 +69,22 @@ export default function ActiveInspectionPage() {
         const bd = blockData as unknown as Block[];
         setBlocks(bd);
         if (bd.length > 0) setSelectedBlockId(bd[0].id);
+
+        // Load current season data for blocks
+        const currentYear = new Date().getFullYear();
+        const blockIds = bd.map((b) => b.id);
+        const { data: seasonData } = await supabase
+          .from("block_seasons" as never)
+          .select("*")
+          .in("block_id" as never, blockIds as never)
+          .eq("season" as never, currentYear as never);
+        if (seasonData) {
+          const seasonMap: Record<string, BlockSeason> = {};
+          for (const s of seasonData as unknown as BlockSeason[]) {
+            seasonMap[s.block_id] = s;
+          }
+          setSeasons(seasonMap);
+        }
       }
 
       // Load weed species (global defaults + farm-specific)
@@ -138,8 +156,8 @@ export default function ActiveInspectionPage() {
       inspection_date: new Date().toISOString().split("T")[0],
       gps_lat: gps.position?.lat ?? null,
       gps_lng: gps.position?.lng ?? null,
-      crop: selectedBlock?.crop ?? null,
-      cultivar: selectedBlock?.cultivar ?? null,
+      crop: seasons[selectedBlockId]?.crop ?? null,
+      cultivar: seasons[selectedBlockId]?.cultivar ?? null,
       notes: currentNotes || null,
       weeds: weedEntries,
     });
@@ -358,7 +376,7 @@ export default function ActiveInspectionPage() {
                 fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
               }}
             >
-              {selectedBlock.crop} · {selectedBlock.cultivar}
+              {seasons[selectedBlockId]?.crop || "—"} · {seasons[selectedBlockId]?.cultivar || "—"}
             </div>
           )}
         </div>
@@ -531,6 +549,7 @@ export default function ActiveInspectionPage() {
       {showBlockSelector && (
         <BlockSelector
           blocks={blocks}
+          seasons={seasons}
           selectedId={selectedBlockId}
           inspectedBlockIds={new Set(Object.keys(inspections))}
           onSelect={setSelectedBlockId}

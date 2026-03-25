@@ -187,6 +187,14 @@ function LoginForm() {
           Skep rekening
         </Link>
       </p>
+
+      <div style={{ textAlign: "center", marginTop: "32px", opacity: 0.4 }}>
+        <img
+          src="/holocene-logo.svg"
+          alt="holocene.dev"
+          style={{ height: "28px", width: "auto" }}
+        />
+      </div>
     </div>
   );
 }

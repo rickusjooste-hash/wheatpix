@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" width="720" height="200">
+  <defs>
+    <linearGradient id="skullGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e8e0d4"/>
+      <stop offset="45%" stop-color="#d4ccc0"/>
+      <stop offset="55%" stop-color="#8aa4b8"/>
+      <stop offset="100%" stop-color="#6b8fa8"/>
+    </linearGradient>
+    <linearGradient id="eyeGlowR" cx="50%" cy="50%" r="50%" fx="50%" fy="50%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#4af0e8" stop-opacity="0.9"/>
+      <stop offset="70%" stop-color="#2ad0d0" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#1ab0b0" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d4ccc0"/>
+      <stop offset="100%" stop-color="#8aa4b8"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="eyeGlow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="leftHalf">
+      <rect x="30" y="15" width="68" height="170"/>
+    </clipPath>
+    <clipPath id="rightHalf">
+      <rect x="98" y="15" width="72" height="170"/>
+    </clipPath>
+  </defs>
+
+  <rect width="720" height="200" fill="#0a0a0a"/>
+
+  <!-- ═══ SKULL ICON ═══ -->
+  <g transform="translate(0, 0)">
+
+    <!-- LEFT SIDE: Organic human skull -->
+    <g clip-path="url(#leftHalf)">
+      <!-- Cranium - organic curves -->
+      <path d="
+        M98,35
+        C78,35 62,42 52,55
+        C42,68 38,85 40,100
+        C41,112 44,122 50,130
+        C53,135 55,140 55,146
+        L55,158
+        C55,162 58,165 62,165
+        L98,165
+        L98,35 Z
+      " fill="#d4ccc0" stroke="#b8b0a4" stroke-width="1.2"/>
+
+      <!-- Temporal bone detail -->
+      <path d="M45,85 C43,90 42,96 42,102" stroke="#b8b0a4" stroke-width="0.8" fill="none" opacity="0.6"/>
+      <path d="M48,78 C45,83 43,90 42,97" stroke="#c4bca8" stroke-width="0.5" fill="none" opacity="0.4"/>
+
+      <!-- Left eye socket - organic round shape -->
+      <ellipse cx="78" cy="88" rx="14" ry="15" fill="#1a1612" stroke="#a89880" stroke-width="1"/>
+      <ellipse cx="78" cy="88" rx="10" ry="11" fill="#0d0a08"/>
+      <!-- Brow ridge -->
+      <path d="M62,73 C68,69 78,68 92,70" stroke="#c4b8a0" stroke-width="1.5" fill="none"/>
+
+      <!-- Left nasal cavity -->
+      <path d="M92,105 C88,108 86,114 88,120 L92,120 L98,115 L98,105 Z" fill="#1a1612" stroke="#a89880" stroke-width="0.8"/>
+
+      <!-- Cheekbone -->
+      <path d="M52,100 C54,105 58,108 64,108" stroke="#c4b8a0" stroke-width="1" fill="none" opacity="0.5"/>
+
+      <!-- Left teeth - organic -->
+      <g fill="#d8d0c4" stroke="#b0a898" stroke-width="0.6">
+        <rect x="64" y="148" width="7" height="12" rx="1.5"/>
+        <rect x="72" y="147" width="6.5" height="13" rx="1.5"/>
+        <rect x="79.5" y="146" width="6" height="14" rx="1.5"/>
+        <rect x="86.5" y="146" width="5.5" height="14" rx="1.2"/>
+        <rect x="93" y="146" width="5" height="13.5" rx="1"/>
+      </g>
+
+      <!-- Jaw organic line -->
+      <path d="M55,146 C55,144 58,138 62,136 C68,132 80,130 98,130" stroke="#b8b0a4" stroke-width="0.8" fill="none" opacity="0.5"/>
+
+      <!-- Subtle crack/suture lines -->
+      <path d="M75,35 C78,45 76,55 80,62" stroke="#b8a890" stroke-width="0.5" fill="none" opacity="0.35"/>
+      <path d="M60,50 C65,55 68,62 66,70" stroke="#b8a890" stroke-width="0.4" fill="none" opacity="0.3"/>
+    </g>
+
+    <!-- RIGHT SIDE: Robotic/mechanical skull -->
+    <g clip-path="url(#rightHalf)">
+      <!-- Cranium - geometric/angular -->
+      <path d="
+        M98,35
+        L118,36
+        L132,42
+        L142,55
+        L148,72
+        L150,90
+        L148,108
+        L144,120
+        L140,128
+        L138,132
+        L138,146
+        L138,158
+        C138,162 135,165 131,165
+        L98,165
+        L98,35 Z
+      " fill="#7a98ae" stroke="#5a7a90" stroke-width="1.2"/>
+
+      <!-- Panel lines / mechanical seams -->
+      <line x1="98" y1="65" x2="140" y2="65" stroke="#4a6a80" stroke-width="0.7" opacity="0.6"/>
+      <line x1="125" y1="36" x2="130" y2="65" stroke="#4a6a80" stroke-width="0.6" opacity="0.5"/>
+      <line x1="145" y1="75" x2="148" y2="95" stroke="#4a6a80" stroke-width="0.5" opacity="0.4"/>
+      <line x1="98" y1="130" x2="138" y2="130" stroke="#4a6a80" stroke-width="0.7" opacity="0.5"/>
+
+      <!-- Hex/plate details on cranium -->
+      <polygon points="120,45 128,45 132,50 128,55 120,55 116,50" fill="none" stroke="#5a7a90" stroke-width="0.6" opacity="0.5"/>
+      <polygon points="135,70 141,70 144,75 141,80 135,80 132,75" fill="none" stroke="#5a7a90" stroke-width="0.5" opacity="0.4"/>
+
+      <!-- Right eye socket - geometric hexagonal -->
+      <polygon points="112,76 126,76 132,88 126,100 112,100 106,88" fill="#0a1a22" stroke="#4a8a9a" stroke-width="1.2"/>
+      <!-- Inner eye - glowing -->
+      <polygon points="114,80 124,80 128,88 124,96 114,96 110,88" fill="#0a2a30" stroke="#3adada" stroke-width="0.6" filter="url(#eyeGlow)"/>
+      <!-- Eye glow center -->
+      <circle cx="119" cy="88" r="5" fill="#4af0e8" opacity="0.7" filter="url(#eyeGlow)"/>
+      <circle cx="119" cy="88" r="2.5" fill="#aafff8" opacity="0.9"/>
+      <!-- Scan line in eye -->
+      <line x1="110" y1="88" x2="128" y2="88" stroke="#4af0e8" stroke-width="0.5" opacity="0.4"/>
+
+      <!-- Right nasal - geometric vent -->
+      <path d="M98,105 L98,118 L104,120 L110,116 L110,108 L105,105 Z" fill="#0a1a22" stroke="#4a7a8a" stroke-width="0.8"/>
+      <!-- Vent slats -->
+      <line x1="100" y1="109" x2="108" y2="109" stroke="#3a6a7a" stroke-width="0.5" opacity="0.6"/>
+      <line x1="100" y1="112" x2="109" y2="112" stroke="#3a6a7a" stroke-width="0.5" opacity="0.6"/>
+      <line x1="100" y1="115" x2="108" y2="115" stroke="#3a6a7a" stroke-width="0.5" opacity="0.6"/>
+
+      <!-- Mechanical cheek detail -->
+      <circle cx="135" cy="105" r="3" fill="none" stroke="#4a7a8a" stroke-width="0.6" opacity="0.5"/>
+      <circle cx="135" cy="105" r="1" fill="#4a7a8a" opacity="0.4"/>
+      <circle cx="140" cy="115" r="2" fill="none" stroke="#4a7a8a" stroke-width="0.5" opacity="0.4"/>
+
+      <!-- Right teeth - mechanical/uniform -->
+      <g fill="#8aacbe" stroke="#5a8a9a" stroke-width="0.7">
+        <rect x="98" y="146" width="5.5" height="13.5" rx="0.5"/>
+        <rect x="104.5" y="146" width="6" height="14" rx="0.5"/>
+        <rect x="111.5" y="147" width="6.5" height="13" rx="0.5"/>
+        <rect x="119" y="148" width="7" height="12" rx="0.5"/>
+      </g>
+      <!-- Tooth detail lines -->
+      <line x1="98" y1="152" x2="126" y2="152" stroke="#4a7a8a" stroke-width="0.3" opacity="0.5"/>
+
+      <!-- Small indicator LEDs -->
+      <circle cx="142" cy="58" r="1.5" fill="#4af0e8" opacity="0.6" filter="url(#glow)"/>
+      <circle cx="146" cy="68" r="1" fill="#4af0e8" opacity="0.4" filter="url(#glow)"/>
+    </g>
+
+    <!-- CENTER MORPH LINE — the transition seam -->
+    <line x1="98" y1="33" x2="98" y2="167" stroke="#2a4a5a" stroke-width="1.2" opacity="0.6" stroke-dasharray="3,4"/>
+
+    <!-- Small circuit traces crossing the seam -->
+    <path d="M92,50 L98,50 L104,48" stroke="#3a7a8a" stroke-width="0.4" fill="none" opacity="0.4"/>
+    <path d="M90,110 L98,110 L106,112" stroke="#3a7a8a" stroke-width="0.4" fill="none" opacity="0.4"/>
+    <path d="M94,140 L98,140 L102,138" stroke="#3a7a8a" stroke-width="0.4" fill="none" opacity="0.3"/>
+  </g>
+
+  <!-- ═══ TEXT: holocene.dev ═══ -->
+  <g transform="translate(185, 100)">
+    <!-- Combined text - single element for natural spacing -->
+    <text
+      x="0"
+      y="8"
+      font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', 'Consolas', monospace"
+      font-size="52"
+      font-weight="300"
+      letter-spacing="2"
+      fill="url(#textGrad)"
+    >holocene<tspan font-weight="700" fill="#4af0e8">.dev</tspan></text>
+  </g>
+</svg>

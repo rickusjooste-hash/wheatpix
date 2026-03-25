@@ -14,31 +14,36 @@ export default function WeedButton({ weed, severity, onTap }: WeedButtonProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
-  const tooltipShowing = useRef(false);
+  const isTouching = useRef(false);
 
-  const startPress = useCallback(() => {
+  const startPress = useCallback((isTouch: boolean) => {
+    if (!isTouch && isTouching.current) return; // Ignore mouse after touch
+    if (isTouch) isTouching.current = true;
     didLongPress.current = false;
     timerRef.current = setTimeout(() => {
       didLongPress.current = true;
-      tooltipShowing.current = true;
       setShowTooltip(true);
     }, 400);
   }, []);
 
-  const endPress = useCallback(() => {
+  const endPress = useCallback((isTouch: boolean) => {
+    if (!isTouch && isTouching.current) return; // Ignore mouse after touch
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (tooltipShowing.current) {
-      tooltipShowing.current = false;
+    if (didLongPress.current) {
       setShowTooltip(false);
-    } else if (!didLongPress.current) {
+    } else {
       onTap(weed.id);
+    }
+    if (isTouch) {
+      // Reset touch flag after a delay to block the synthetic mouse events
+      setTimeout(() => { isTouching.current = false; }, 300);
     }
   }, [onTap, weed.id]);
 
   const cancelPress = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    tooltipShowing.current = false;
     setShowTooltip(false);
+    setTimeout(() => { isTouching.current = false; }, 300);
   }, []);
 
   return (
@@ -79,11 +84,11 @@ export default function WeedButton({ weed, severity, onTap }: WeedButtonProps) {
         </div>
       )}
       <button
-        onTouchStart={startPress}
-        onTouchEnd={endPress}
+        onTouchStart={() => startPress(true)}
+        onTouchEnd={() => endPress(true)}
         onTouchCancel={cancelPress}
-        onMouseDown={startPress}
-        onMouseUp={endPress}
+        onMouseDown={() => startPress(false)}
+        onMouseUp={() => endPress(false)}
         onMouseLeave={cancelPress}
         onContextMenu={(e) => e.preventDefault()}
         style={{

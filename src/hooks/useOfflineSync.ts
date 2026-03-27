@@ -190,6 +190,7 @@ export function useOfflineSync() {
             weed_species_id: w.weed_species_id,
             severity: w.severity,
             notes: w.notes || null,
+            zones: w.zones && w.zones.length > 0 ? w.zones : null,
           }));
 
           const { error: weedError } = await supabase

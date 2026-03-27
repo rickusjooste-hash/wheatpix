@@ -67,11 +67,13 @@ export interface WeedSeverityEntry {
   weed_species_id: string;
   severity: SeverityLevel;
   notes?: string | null;
+  zones?: number[] | null;
 }
 
 export interface WeedEntry {
   severity: SeverityLevel;
   notes?: string;
+  zones?: number[];
 }
 
 // Map of weed_species_id -> entry for a single block inspection

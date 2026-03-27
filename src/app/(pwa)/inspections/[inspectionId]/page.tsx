@@ -139,6 +139,7 @@ export default function ActiveInspectionPage() {
             [weedId]: {
               severity: newSev,
               notes: newSev === 0 ? undefined : current.notes,
+              zones: newSev === 0 ? undefined : current.zones,
             },
           },
         };
@@ -152,7 +153,7 @@ export default function ActiveInspectionPage() {
   }, []);
 
   const handleNoteSave = useCallback(
-    (note: string) => {
+    (note: string, zones: number[]) => {
       if (!editingNoteWeed) return;
       setInspections((prev) => {
         const blockData = prev[selectedBlockId] || {};
@@ -161,7 +162,11 @@ export default function ActiveInspectionPage() {
           ...prev,
           [selectedBlockId]: {
             ...blockData,
-            [editingNoteWeed]: { ...current, notes: note || undefined },
+            [editingNoteWeed]: {
+              ...current,
+              notes: note || undefined,
+              zones: zones.length > 0 ? zones : undefined,
+            },
           },
         };
       });
@@ -211,6 +216,7 @@ export default function ActiveInspectionPage() {
         weed_species_id: weedId,
         severity: entry.severity,
         notes: entry.notes || null,
+        zones: entry.zones && entry.zones.length > 0 ? entry.zones : null,
       }));
 
     const photoMetas = currentPhotos.map((p, i) => ({
@@ -665,6 +671,8 @@ export default function ActiveInspectionPage() {
           weed={weeds.find((w) => w.id === editingNoteWeed)!}
           severity={currentData[editingNoteWeed]?.severity || 0}
           note={currentData[editingNoteWeed]?.notes || ""}
+          zones={currentData[editingNoteWeed]?.zones || []}
+          geometry={selectedBlock?.geometry || null}
           onSave={handleNoteSave}
           onClose={() => setEditingNoteWeed(null)}
         />

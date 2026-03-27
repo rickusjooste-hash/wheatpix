@@ -86,6 +86,31 @@ export interface PendingPhoto {
   sort_order: number;
 }
 
+export interface Herbicide {
+  id: string;
+  name: string;
+  active_ingredients: string[];
+  group_code: string | null;
+  category: "broadleaf" | "grass" | "both";
+}
+
+export interface HerbicideEfficacy {
+  herbicide_id: string;
+  weed_species_id: string;
+  efficacy: "effective" | "very_effective" | "uncertain";
+}
+
+export interface HerbicideRecommendation {
+  herbicide: Herbicide;
+  coveredWeeds: WeedSpecies[];
+  maxEfficacy: "effective" | "very_effective" | "uncertain";
+}
+
+export interface SelectedHerbicide {
+  herbicide_id: string;
+  is_auto_suggested: boolean;
+}
+
 /** Point-in-polygon check using ray casting */
 export function isPointInPolygon(
   point: { lat: number; lng: number },

@@ -11,6 +11,8 @@ import BlockSelector from "@/components/inspections/BlockSelector";
 import InspectionSummary from "@/components/inspections/InspectionSummary";
 import WeedNoteModal from "@/components/inspections/WeedNoteModal";
 import PhotoCapture from "@/components/inspections/PhotoCapture";
+import HerbicideRecommendations from "@/components/inspections/HerbicideRecommendations";
+import { getRecommendations } from "@/lib/herbicide-engine";
 import {
   nextSeverity,
   type Block,
@@ -20,6 +22,9 @@ import {
   type SeverityLevel,
   type InspectionStage,
   type PendingPhoto,
+  type Herbicide,
+  type HerbicideEfficacy,
+  type SelectedHerbicide,
 } from "@/lib/inspection-utils";
 
 export default function ActiveInspectionPage() {
@@ -38,6 +43,9 @@ export default function ActiveInspectionPage() {
   const [inspections, setInspections] = useState<Record<string, WeedData>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [photos, setPhotos] = useState<Record<string, PendingPhoto[]>>({});
+  const [allHerbicides, setAllHerbicides] = useState<Herbicide[]>([]);
+  const [efficacyData, setEfficacyData] = useState<HerbicideEfficacy[]>([]);
+  const [selectedHerbicides, setSelectedHerbicides] = useState<Record<string, Set<string>>>({});
   const [editingNoteWeed, setEditingNoteWeed] = useState<string | null>(null);
   const [showBlockSelector, setShowBlockSelector] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -102,6 +110,18 @@ export default function ActiveInspectionPage() {
         .order("sort_order" as never);
       if (weedData) setWeeds(weedData as unknown as WeedSpecies[]);
 
+      // Load herbicides + efficacy data
+      const { data: herbData } = await supabase
+        .from("herbicides" as never)
+        .select("*")
+        .eq("is_active" as never, true as never);
+      if (herbData) setAllHerbicides(herbData as unknown as Herbicide[]);
+
+      const { data: effData } = await supabase
+        .from("herbicide_weed_efficacy" as never)
+        .select("herbicide_id, weed_species_id, efficacy");
+      if (effData) setEfficacyData(effData as unknown as HerbicideEfficacy[]);
+
       setLoading(false);
     }
 
@@ -119,7 +139,14 @@ export default function ActiveInspectionPage() {
   const currentData = inspections[selectedBlockId] || {};
   const currentNotes = notes[selectedBlockId] || "";
   const currentPhotos = photos[selectedBlockId] || [];
+  const currentSelectedHerbicides = selectedHerbicides[selectedBlockId] || new Set<string>();
   const hasData = Object.values(currentData).some((v) => v.severity > 0);
+
+  // Compute herbicide recommendations based on detected weeds
+  const detectedWeedIds = Object.entries(currentData)
+    .filter(([, entry]) => entry.severity > 0)
+    .map(([weedId]) => weedId);
+  const recommendations = getRecommendations(detectedWeedIds, efficacyData, allHerbicides, weeds);
   const completedCount = Object.keys(inspections).length;
 
   const grasses = weeds.filter((w) => w.category === "grass");
@@ -207,6 +234,32 @@ export default function ActiveInspectionPage() {
     [selectedBlockId]
   );
 
+  const handleHerbicideToggle = useCallback(
+    (herbicideId: string) => {
+      setSelectedHerbicides((prev) => {
+        const current = new Set(prev[selectedBlockId] || []);
+        if (current.has(herbicideId)) {
+          current.delete(herbicideId);
+        } else {
+          current.add(herbicideId);
+        }
+        return { ...prev, [selectedBlockId]: current };
+      });
+    },
+    [selectedBlockId]
+  );
+
+  const handleHerbicideAdd = useCallback(
+    (herbicideId: string) => {
+      setSelectedHerbicides((prev) => {
+        const current = new Set(prev[selectedBlockId] || []);
+        current.add(herbicideId);
+        return { ...prev, [selectedBlockId]: current };
+      });
+    },
+    [selectedBlockId]
+  );
+
   const handleSave = useCallback(async () => {
     if (!hasData || !selectedBlockId || !stageId || !farmId || !userId) return;
 
@@ -230,6 +283,13 @@ export default function ActiveInspectionPage() {
       blob: p.blob,
     }));
 
+    // Build herbicide selections with auto-suggested flag
+    const autoSuggestedIds = new Set(recommendations.map((r) => r.herbicide.id));
+    const herbicideEntries: SelectedHerbicide[] = [...currentSelectedHerbicides].map((id) => ({
+      herbicide_id: id,
+      is_auto_suggested: autoSuggestedIds.has(id),
+    }));
+
     await saveInspection(
       {
         id: crypto.randomUUID(),
@@ -245,6 +305,7 @@ export default function ActiveInspectionPage() {
         notes: currentNotes || null,
         weeds: weedEntries,
         photos: photoMetas,
+        herbicides: herbicideEntries,
       },
       photoBlobs.length > 0 ? photoBlobs : undefined
     );
@@ -260,6 +321,8 @@ export default function ActiveInspectionPage() {
     currentData,
     currentNotes,
     currentPhotos,
+    currentSelectedHerbicides,
+    recommendations,
     gps.position,
     seasons,
     saveInspection,
@@ -540,7 +603,7 @@ export default function ActiveInspectionPage() {
       />
 
       {/* Notes */}
-      <div style={{ padding: "20px 20px 100px" }}>
+      <div style={{ padding: "20px 20px 0" }}>
         <textarea
           placeholder="Notas (opsioneel)..."
           value={currentNotes}
@@ -563,6 +626,17 @@ export default function ActiveInspectionPage() {
             fontFamily: "var(--font-outfit), 'Outfit', sans-serif",
             boxSizing: "border-box",
           }}
+        />
+      </div>
+
+      {/* Herbicide Recommendations */}
+      <div style={{ paddingBottom: "100px" }}>
+        <HerbicideRecommendations
+          recommendations={recommendations}
+          allHerbicides={allHerbicides}
+          selectedIds={currentSelectedHerbicides}
+          onToggle={handleHerbicideToggle}
+          onAdd={handleHerbicideAdd}
         />
       </div>
 

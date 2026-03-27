@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { WeedSeverityEntry } from "@/lib/inspection-utils";
+import type { WeedSeverityEntry, SelectedHerbicide } from "@/lib/inspection-utils";
 
 const DB_NAME = "kamp-inspeksie-offline";
 const DB_VERSION = 2;
@@ -31,6 +31,7 @@ interface PendingInspection {
   notes: string | null;
   weeds: WeedSeverityEntry[];
   photos: PendingPhotoMeta[];
+  herbicides: SelectedHerbicide[];
   created_at: string;
 }
 
@@ -166,7 +167,7 @@ export function useOfflineSync() {
       const pending = await getAllPending();
 
       for (const item of pending) {
-        const { weeds, photos, ...inspectionData } = item;
+        const { weeds, photos, herbicides, ...inspectionData } = item;
 
         const { data: inserted, error: insertError } = await supabase
           .from("camp_inspections" as never)
@@ -234,6 +235,24 @@ export function useOfflineSync() {
                 caption: photoMeta.caption || null,
                 sort_order: photoMeta.sort_order,
               } as never);
+          }
+        }
+
+        // Sync herbicide recommendations
+        if (herbicides.length > 0 && inserted) {
+          const inspectionId = (inserted as { id: string }).id;
+          const herbicideRows = herbicides.map((h) => ({
+            inspection_id: inspectionId,
+            herbicide_id: h.herbicide_id,
+            is_auto_suggested: h.is_auto_suggested,
+          }));
+
+          const { error: herbError } = await supabase
+            .from("camp_inspection_herbicides" as never)
+            .insert(herbicideRows as never);
+
+          if (herbError) {
+            console.error("Herbicide sync error:", herbError);
           }
         }
 

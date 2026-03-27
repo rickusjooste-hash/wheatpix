@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import StageSelector from "@/components/inspections/StageSelector";
@@ -29,6 +29,10 @@ export default function NewInspectionPage() {
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const farmRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const startRef = useRef<HTMLDivElement>(null);
+
   // Load clients
   useEffect(() => {
     async function load() {
@@ -51,6 +55,7 @@ export default function NewInspectionPage() {
         setClients(cd);
         if (cd.length === 1) {
           setSelectedClientId(cd[0].id);
+          setTimeout(() => farmRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
         }
       }
       setLoading(false);
@@ -79,6 +84,7 @@ export default function NewInspectionPage() {
         setFarms(fd);
         if (fd.length === 1) {
           setSelectedFarmId(fd[0].id);
+          setTimeout(() => stageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
         }
       }
     }
@@ -280,6 +286,7 @@ export default function NewInspectionPage() {
                   setSelectedClientId(c.id);
                   setSelectedFarmId(null);
                   setSelectedStageId(null);
+                  setTimeout(() => farmRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
                 }}
                 style={btnStyle(selectedClientId === c.id)}
               >
@@ -313,7 +320,7 @@ export default function NewInspectionPage() {
 
       {/* Step 2: Farm picker — only after client selected */}
       {selectedClientId && farms.length > 0 && (
-        <div style={{ padding: "0 24px", marginBottom: "16px" }}>
+        <div ref={farmRef} style={{ padding: "0 24px", marginBottom: "16px" }}>
           <div style={{ fontSize: "14px", fontWeight: 600, color: "#cccccc", marginBottom: "12px" }}>
             Kies plaas
           </div>
@@ -324,6 +331,7 @@ export default function NewInspectionPage() {
                 onClick={() => {
                   setSelectedFarmId(fm.id);
                   setSelectedStageId(null);
+                  setTimeout(() => stageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
                 }}
                 style={btnStyle(selectedFarmId === fm.id)}
               >
@@ -341,17 +349,22 @@ export default function NewInspectionPage() {
 
       {/* Step 3: Stage selector — only after farm selected */}
       {selectedFarmId && (
+        <div ref={stageRef}>
         <StageSelector
           stages={stages}
           selectedStageId={selectedStageId}
-          onSelect={setSelectedStageId}
+          onSelect={(id) => {
+            setSelectedStageId(id);
+            setTimeout(() => startRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100);
+          }}
           onAddStage={handleAddStage}
           onDeleteStage={handleDeleteStage}
         />
+        </div>
       )}
 
       {/* Start button */}
-      <div style={{ padding: "24px", marginTop: "auto" }}>
+      <div ref={startRef} style={{ padding: "24px", marginTop: "auto" }}>
         <button
           onClick={handleStart}
           disabled={!selectedStageId || !selectedFarmId}

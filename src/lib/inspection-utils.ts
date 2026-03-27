@@ -66,10 +66,23 @@ export interface CampInspection {
 export interface WeedSeverityEntry {
   weed_species_id: string;
   severity: SeverityLevel;
+  notes?: string | null;
 }
 
-// Map of weed_species_id -> severity for a single block inspection
-export type WeedData = Record<string, SeverityLevel>;
+export interface WeedEntry {
+  severity: SeverityLevel;
+  notes?: string;
+}
+
+// Map of weed_species_id -> entry for a single block inspection
+export type WeedData = Record<string, WeedEntry>;
+
+export interface PendingPhoto {
+  id: string;
+  blob: Blob;
+  caption: string;
+  sort_order: number;
+}
 
 /** Point-in-polygon check using ray casting */
 export function isPointInPolygon(

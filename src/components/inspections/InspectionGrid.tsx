@@ -8,6 +8,7 @@ interface InspectionGridProps {
   broadleaf: WeedSpecies[];
   weedData: WeedData;
   onTap: (weedId: string) => void;
+  onNoteEdit: (weedId: string) => void;
 }
 
 export default function InspectionGrid({
@@ -15,6 +16,7 @@ export default function InspectionGrid({
   broadleaf,
   weedData,
   onTap,
+  onNoteEdit,
 }: InspectionGridProps) {
   return (
     <>
@@ -45,8 +47,10 @@ export default function InspectionGrid({
             <WeedButton
               key={w.id}
               weed={w}
-              severity={(weedData[w.id] || 0) as SeverityLevel}
+              severity={(weedData[w.id]?.severity || 0) as SeverityLevel}
+              note={weedData[w.id]?.notes}
               onTap={onTap}
+              onNoteEdit={onNoteEdit}
             />
           ))}
         </div>
@@ -79,8 +83,10 @@ export default function InspectionGrid({
             <WeedButton
               key={w.id}
               weed={w}
-              severity={(weedData[w.id] || 0) as SeverityLevel}
+              severity={(weedData[w.id]?.severity || 0) as SeverityLevel}
+              note={weedData[w.id]?.notes}
               onTap={onTap}
+              onNoteEdit={onNoteEdit}
             />
           ))}
         </div>

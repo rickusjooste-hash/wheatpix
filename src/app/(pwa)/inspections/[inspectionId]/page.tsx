@@ -9,6 +9,8 @@ import InspectionGrid from "@/components/inspections/InspectionGrid";
 import SeverityLegend from "@/components/inspections/SeverityLegend";
 import BlockSelector from "@/components/inspections/BlockSelector";
 import InspectionSummary from "@/components/inspections/InspectionSummary";
+import WeedNoteModal from "@/components/inspections/WeedNoteModal";
+import PhotoCapture from "@/components/inspections/PhotoCapture";
 import {
   nextSeverity,
   type Block,
@@ -17,6 +19,7 @@ import {
   type WeedData,
   type SeverityLevel,
   type InspectionStage,
+  type PendingPhoto,
 } from "@/lib/inspection-utils";
 
 export default function ActiveInspectionPage() {
@@ -34,6 +37,8 @@ export default function ActiveInspectionPage() {
   const [selectedBlockId, setSelectedBlockId] = useState<string>("");
   const [inspections, setInspections] = useState<Record<string, WeedData>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [photos, setPhotos] = useState<Record<string, PendingPhoto[]>>({});
+  const [editingNoteWeed, setEditingNoteWeed] = useState<string | null>(null);
   const [showBlockSelector, setShowBlockSelector] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -113,7 +118,8 @@ export default function ActiveInspectionPage() {
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId);
   const currentData = inspections[selectedBlockId] || {};
   const currentNotes = notes[selectedBlockId] || "";
-  const hasData = Object.values(currentData).some((v) => v > 0);
+  const currentPhotos = photos[selectedBlockId] || [];
+  const hasData = Object.values(currentData).some((v) => v.severity > 0);
   const completedCount = Object.keys(inspections).length;
 
   const grasses = weeds.filter((w) => w.category === "grass");
@@ -124,15 +130,74 @@ export default function ActiveInspectionPage() {
       setSaved(false);
       setInspections((prev) => {
         const blockData = prev[selectedBlockId] || {};
-        const current = (blockData[weedId] || 0) as SeverityLevel;
+        const current = blockData[weedId] || { severity: 0 as SeverityLevel };
+        const newSev = nextSeverity(current.severity);
         return {
           ...prev,
           [selectedBlockId]: {
             ...blockData,
-            [weedId]: nextSeverity(current),
+            [weedId]: {
+              severity: newSev,
+              notes: newSev === 0 ? undefined : current.notes,
+            },
           },
         };
       });
+    },
+    [selectedBlockId]
+  );
+
+  const handleNoteEdit = useCallback((weedId: string) => {
+    setEditingNoteWeed(weedId);
+  }, []);
+
+  const handleNoteSave = useCallback(
+    (note: string) => {
+      if (!editingNoteWeed) return;
+      setInspections((prev) => {
+        const blockData = prev[selectedBlockId] || {};
+        const current = blockData[editingNoteWeed] || { severity: 0 as SeverityLevel };
+        return {
+          ...prev,
+          [selectedBlockId]: {
+            ...blockData,
+            [editingNoteWeed]: { ...current, notes: note || undefined },
+          },
+        };
+      });
+      setEditingNoteWeed(null);
+    },
+    [editingNoteWeed, selectedBlockId]
+  );
+
+  const handleAddPhoto = useCallback(
+    (photo: PendingPhoto) => {
+      setPhotos((prev) => ({
+        ...prev,
+        [selectedBlockId]: [...(prev[selectedBlockId] || []), photo],
+      }));
+    },
+    [selectedBlockId]
+  );
+
+  const handleRemovePhoto = useCallback(
+    (photoId: string) => {
+      setPhotos((prev) => ({
+        ...prev,
+        [selectedBlockId]: (prev[selectedBlockId] || []).filter((p) => p.id !== photoId),
+      }));
+    },
+    [selectedBlockId]
+  );
+
+  const handleCaptionChange = useCallback(
+    (photoId: string, caption: string) => {
+      setPhotos((prev) => ({
+        ...prev,
+        [selectedBlockId]: (prev[selectedBlockId] || []).map((p) =>
+          p.id === photoId ? { ...p, caption } : p
+        ),
+      }));
     },
     [selectedBlockId]
   );
@@ -141,26 +206,42 @@ export default function ActiveInspectionPage() {
     if (!hasData || !selectedBlockId || !stageId || !farmId || !userId) return;
 
     const weedEntries = Object.entries(currentData)
-      .filter(([, severity]) => severity > 0)
-      .map(([weedId, severity]) => ({
+      .filter(([, entry]) => entry.severity > 0)
+      .map(([weedId, entry]) => ({
         weed_species_id: weedId,
-        severity: severity as SeverityLevel,
+        severity: entry.severity,
+        notes: entry.notes || null,
       }));
 
-    await saveInspection({
-      id: crypto.randomUUID(),
-      farm_id: farmId,
-      block_id: selectedBlockId,
-      stage_id: stageId,
-      inspector_id: userId,
-      inspection_date: new Date().toISOString().split("T")[0],
-      gps_lat: gps.position?.lat ?? null,
-      gps_lng: gps.position?.lng ?? null,
-      crop: seasons[selectedBlockId]?.crop ?? null,
-      cultivar: seasons[selectedBlockId]?.cultivar ?? null,
-      notes: currentNotes || null,
-      weeds: weedEntries,
-    });
+    const photoMetas = currentPhotos.map((p, i) => ({
+      id: p.id,
+      caption: p.caption,
+      sort_order: i,
+    }));
+
+    const photoBlobs = currentPhotos.map((p) => ({
+      id: p.id,
+      blob: p.blob,
+    }));
+
+    await saveInspection(
+      {
+        id: crypto.randomUUID(),
+        farm_id: farmId,
+        block_id: selectedBlockId,
+        stage_id: stageId,
+        inspector_id: userId,
+        inspection_date: new Date().toISOString().split("T")[0],
+        gps_lat: gps.position?.lat ?? null,
+        gps_lng: gps.position?.lng ?? null,
+        crop: seasons[selectedBlockId]?.crop ?? null,
+        cultivar: seasons[selectedBlockId]?.cultivar ?? null,
+        notes: currentNotes || null,
+        weeds: weedEntries,
+        photos: photoMetas,
+      },
+      photoBlobs.length > 0 ? photoBlobs : undefined
+    );
 
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -172,8 +253,9 @@ export default function ActiveInspectionPage() {
     userId,
     currentData,
     currentNotes,
+    currentPhotos,
     gps.position,
-    selectedBlock,
+    seasons,
     saveInspection,
   ]);
 
@@ -440,6 +522,15 @@ export default function ActiveInspectionPage() {
         broadleaf={broadleaf}
         weedData={currentData}
         onTap={handleTap}
+        onNoteEdit={handleNoteEdit}
+      />
+
+      {/* Photos */}
+      <PhotoCapture
+        photos={currentPhotos}
+        onAdd={handleAddPhoto}
+        onRemove={handleRemovePhoto}
+        onCaptionChange={handleCaptionChange}
       />
 
       {/* Notes */}
@@ -565,6 +656,17 @@ export default function ActiveInspectionPage() {
           weeds={weeds}
           stageName={stage?.name || ""}
           onClose={() => setShowSummary(false)}
+        />
+      )}
+
+      {/* Weed Note Modal */}
+      {editingNoteWeed && (
+        <WeedNoteModal
+          weed={weeds.find((w) => w.id === editingNoteWeed)!}
+          severity={currentData[editingNoteWeed]?.severity || 0}
+          note={currentData[editingNoteWeed]?.notes || ""}
+          onSave={handleNoteSave}
+          onClose={() => setEditingNoteWeed(null)}
         />
       )}
     </div>

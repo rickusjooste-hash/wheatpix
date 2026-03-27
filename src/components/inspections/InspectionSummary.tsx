@@ -163,7 +163,7 @@ export default function InspectionSummary({
                         {b.name}
                       </td>
                       {weeds.map((w) => {
-                        const sev = (data[w.id] || 0) as SeverityLevel;
+                        const sev = (data[w.id]?.severity || 0) as SeverityLevel;
                         const sv = SEVERITY_LEVELS[sev];
                         return (
                           <td

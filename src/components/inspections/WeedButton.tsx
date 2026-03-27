@@ -6,10 +6,12 @@ import { SEVERITY_LEVELS, type SeverityLevel, type WeedSpecies } from "@/lib/ins
 interface WeedButtonProps {
   weed: WeedSpecies;
   severity: SeverityLevel;
+  note?: string;
   onTap: (weedId: string) => void;
+  onNoteEdit: (weedId: string) => void;
 }
 
-export default function WeedButton({ weed, severity, onTap }: WeedButtonProps) {
+export default function WeedButton({ weed, severity, note, onTap, onNoteEdit }: WeedButtonProps) {
   const s = SEVERITY_LEVELS[severity];
   const [showTooltip, setShowTooltip] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -146,6 +148,50 @@ export default function WeedButton({ weed, severity, onTap }: WeedButtonProps) {
         >
           {severity === 0 ? "" : s.label}
         </span>
+        {severity > 0 && (
+          <div
+            onTouchStart={(e) => {
+              e.stopPropagation();
+            }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onNoteEdit(weed.id);
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+            }}
+            onMouseUp={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onNoteEdit(weed.id);
+            }}
+            style={{
+              position: "absolute",
+              top: "2px",
+              right: "2px",
+              width: "20px",
+              height: "20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 2,
+              padding: "6px",
+              boxSizing: "content-box",
+            }}
+          >
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 16 16"
+              fill={note ? s.color : "none"}
+              stroke={note ? s.color : "#555555"}
+              strokeWidth="1.5"
+            >
+              <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" />
+            </svg>
+          </div>
+        )}
       </button>
     </div>
   );

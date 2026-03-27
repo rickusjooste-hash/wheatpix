@@ -65,28 +65,38 @@ export default function ZoneGridModal({
 
   const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
 
-  // Compute which grid cells have their center inside the polygon
+  // Compute which grid cells overlap the polygon (check center + all 4 corners)
   const cellInfo = useMemo(() => {
     const latRange = maxLat - minLat || 1e-6;
     const lngRange = maxLng - minLng || 1e-6;
     const cellW = (bbox.maxX - bbox.minX) / GRID_SIZE;
     const cellH = (bbox.maxY - bbox.minY) / GRID_SIZE;
 
+    const svxToGeo = (sx: number, sy: number) => ({
+      lng: minLng + ((sx - bbox.minX) / (bbox.maxX - bbox.minX)) * lngRange,
+      lat: maxLat - ((sy - bbox.minY) / (bbox.maxY - bbox.minY)) * latRange,
+    });
+
     return Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, idx) => {
       const col = idx % GRID_SIZE;
       const row = Math.floor(idx / GRID_SIZE);
-      const cx = bbox.minX + (col + 0.5) * cellW;
-      const cy = bbox.minY + (row + 0.5) * cellH;
+      const x = bbox.minX + col * cellW;
+      const y = bbox.minY + row * cellH;
 
-      // Convert SVG center back to lat/lng to check point-in-polygon
-      const lng = minLng + ((cx - bbox.minX) / (bbox.maxX - bbox.minX)) * lngRange;
-      const lat = maxLat - ((cy - bbox.minY) / (bbox.maxY - bbox.minY)) * latRange;
-      const inside = isPointInPolygon({ lat, lng }, geometry);
+      // Check center + all 4 corners — if any point is inside, the cell is tappable
+      const samplePoints = [
+        svxToGeo(x + cellW * 0.5, y + cellH * 0.5), // center
+        svxToGeo(x, y),                               // top-left
+        svxToGeo(x + cellW, y),                       // top-right
+        svxToGeo(x, y + cellH),                       // bottom-left
+        svxToGeo(x + cellW, y + cellH),               // bottom-right
+      ];
+      const inside = samplePoints.some((p) => isPointInPolygon(p, geometry));
 
       return {
         idx,
-        x: bbox.minX + col * cellW,
-        y: bbox.minY + row * cellH,
+        x,
+        y,
         w: cellW,
         h: cellH,
         inside,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useGeoLocation } from "@/hooks/useGeoLocation";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
@@ -30,6 +30,7 @@ import {
 export default function ActiveInspectionPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const supabase = createClient();
 
   const stageId = params.inspectionId as string;
@@ -483,6 +484,25 @@ export default function ActiveInspectionPage() {
               }}
             >
               ☰ Opsomming
+            </button>
+            <button
+              onClick={() => {
+                if (confirm("Wil jy die inspeksie verlaat?")) {
+                  router.push("/app");
+                }
+              }}
+              style={{
+                background: "#1a1a1a",
+                border: "1px solid #333333",
+                borderRadius: "6px",
+                color: "#666666",
+                fontSize: "11px",
+                padding: "6px 12px",
+                cursor: "pointer",
+                fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+              }}
+            >
+              ✕
             </button>
           </div>
         </div>

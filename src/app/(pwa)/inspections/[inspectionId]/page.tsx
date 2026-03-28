@@ -144,6 +144,7 @@ export default function ActiveInspectionPage() {
   const currentSelectedHerbicides = selectedHerbicides[selectedBlockId] || new Set<string>();
   const hasData = Object.values(currentData).some((v) => v.severity > 0);
   const isBlockSaved = savedBlocks.has(selectedBlockId);
+  const allBlocksSaved = savedBlocks.size >= blocks.length && blocks.length > 0;
 
   // Compute herbicide recommendations based on detected weeds
   const detectedWeedIds = Object.entries(currentData)
@@ -155,9 +156,20 @@ export default function ActiveInspectionPage() {
   const grasses = weeds.filter((w) => w.category === "grass");
   const broadleaf = weeds.filter((w) => w.category === "broadleaf");
 
+  // Re-enable save if data changes after saving
+  const markBlockDirty = useCallback(() => {
+    setSavedBlocks((prev) => {
+      if (!prev.has(selectedBlockId)) return prev;
+      const next = new Set(prev);
+      next.delete(selectedBlockId);
+      return next;
+    });
+    setSaved(false);
+  }, [selectedBlockId]);
+
   const handleTap = useCallback(
     (weedId: string) => {
-      setSaved(false);
+      markBlockDirty();
       setInspections((prev) => {
         const blockData = prev[selectedBlockId] || {};
         const current = blockData[weedId] || { severity: 0 as SeverityLevel };
@@ -239,6 +251,7 @@ export default function ActiveInspectionPage() {
 
   const handleHerbicideToggle = useCallback(
     (herbicideId: string) => {
+      markBlockDirty();
       setSelectedHerbicides((prev) => {
         const current = new Set(prev[selectedBlockId] || []);
         if (current.has(herbicideId)) {
@@ -254,6 +267,7 @@ export default function ActiveInspectionPage() {
 
   const handleHerbicideAdd = useCallback(
     (herbicideId: string) => {
+      markBlockDirty();
       setSelectedHerbicides((prev) => {
         const current = new Set(prev[selectedBlockId] || []);
         current.add(herbicideId);
@@ -615,12 +629,13 @@ export default function ActiveInspectionPage() {
         <textarea
           placeholder="Notas (opsioneel)..."
           value={currentNotes}
-          onChange={(e) =>
+          onChange={(e) => {
+            markBlockDirty();
             setNotes((prev) => ({
               ...prev,
               [selectedBlockId]: e.target.value,
-            }))
-          }
+            }));
+          }}
           style={{
             width: "100%",
             padding: "12px",
@@ -681,12 +696,14 @@ export default function ActiveInspectionPage() {
           ◀
         </button>
         <button
-          onClick={handleSave}
-          disabled={!hasData || isBlockSaved}
+          onClick={allBlocksSaved && isBlockSaved ? () => setShowSummary(true) : handleSave}
+          disabled={!allBlocksSaved && (!hasData || isBlockSaved)}
           style={{
             flex: 1,
             padding: "14px",
-            background: saved || isBlockSaved
+            background: allBlocksSaved && isBlockSaved
+              ? "linear-gradient(135deg, #2a6a2a, #3a8a3a)"
+              : saved || isBlockSaved
               ? "#1a3a1a"
               : hasData
               ? "linear-gradient(135deg, #2a6a2a, #3a8a3a)"
@@ -696,16 +713,28 @@ export default function ActiveInspectionPage() {
                 ? "1px solid #4a9a4a"
                 : "1px solid #222222",
             borderRadius: "10px",
-            color: saved || isBlockSaved ? "#4a9a4a" : hasData ? "#ffffff" : "#444444",
+            color: allBlocksSaved && isBlockSaved
+              ? "#ffffff"
+              : saved || isBlockSaved
+              ? "#4a9a4a"
+              : hasData
+              ? "#ffffff"
+              : "#444444",
             fontSize: "15px",
             fontWeight: 700,
-            cursor: hasData && !isBlockSaved ? "pointer" : "default",
+            cursor: (hasData && !isBlockSaved) || (allBlocksSaved && isBlockSaved) ? "pointer" : "default",
             fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
             letterSpacing: "0.5px",
             transition: "all 0.2s ease",
           }}
         >
-          {isBlockSaved ? "✓ Gestoor" : saved ? "✓ Gestoor" : "Stoor Kamp"}
+          {allBlocksSaved && isBlockSaved
+            ? "Klaar met Inspeksie ✓"
+            : isBlockSaved
+            ? "✓ Gestoor"
+            : saved
+            ? "✓ Gestoor"
+            : "Stoor Kamp"}
         </button>
         <button
           onClick={() => navigateBlock(1)}

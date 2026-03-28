@@ -129,12 +129,13 @@ export default function ActiveInspectionPage() {
     load();
   }, [supabase, stageId, farmId]);
 
-  // Auto-select block from GPS
+  // Auto-select block from GPS — switch when agent physically moves to a new camp
   useEffect(() => {
-    if (gps.matchedBlock && !inspections[gps.matchedBlock.id]) {
+    if (gps.matchedBlock && gps.matchedBlock.id !== selectedBlockId) {
       setSelectedBlockId(gps.matchedBlock.id);
+      setSaved(false);
     }
-  }, [gps.matchedBlock, inspections]);
+  }, [gps.matchedBlock, selectedBlockId]);
 
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId);
   const currentData = inspections[selectedBlockId] || {};
@@ -312,19 +313,10 @@ export default function ActiveInspectionPage() {
       photoBlobs.length > 0 ? photoBlobs : undefined
     );
 
-    // Mark block as saved
+    // Mark block as saved — stay on this camp, GPS will switch when agent moves
     setSavedBlocks((prev) => new Set([...prev, selectedBlockId]));
     setSaved(true);
-
-    // Auto-advance to next unsaved block after a short delay
-    setTimeout(() => {
-      setSaved(false);
-      const idx = blocks.findIndex((b) => b.id === selectedBlockId);
-      const nextUnsaved = blocks.find((b, i) => i > idx && !savedBlocks.has(b.id) && b.id !== selectedBlockId);
-      if (nextUnsaved) {
-        setSelectedBlockId(nextUnsaved.id);
-      }
-    }, 1500);
+    setTimeout(() => setSaved(false), 2000);
   }, [
     hasData,
     isBlockSaved,

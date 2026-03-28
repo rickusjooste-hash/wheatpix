@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   SEVERITY_LEVELS,
   type WeedSpecies,
@@ -14,6 +15,7 @@ interface InspectionSummaryProps {
   weeds: WeedSpecies[];
   stageName: string;
   onClose: () => void;
+  isComplete?: boolean;
 }
 
 export default function InspectionSummary({
@@ -22,7 +24,9 @@ export default function InspectionSummary({
   weeds,
   stageName,
   onClose,
+  isComplete,
 }: InspectionSummaryProps) {
+  const router = useRouter();
   const inspectedBlocks = blocks.filter((b) => inspections[b.id]);
 
   return (
@@ -188,6 +192,50 @@ export default function InspectionSummary({
             </table>
           </div>
         )}
+      </div>
+
+      {/* Bottom actions */}
+      <div
+        style={{
+          padding: "12px 20px",
+          borderTop: "1px solid #222222",
+          display: "flex",
+          gap: "10px",
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            flex: 1,
+            padding: "14px",
+            background: "#1a1a1a",
+            border: "1px solid #333333",
+            borderRadius: "10px",
+            color: "#888888",
+            fontSize: "14px",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Terug
+        </button>
+        <button
+          onClick={() => router.push("/dashboard/history")}
+          style={{
+            flex: 2,
+            padding: "14px",
+            background: "linear-gradient(135deg, #2a6a2a, #3a8a3a)",
+            border: "1px solid #4a9a4a",
+            borderRadius: "10px",
+            color: "#ffffff",
+            fontSize: "14px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+          }}
+        >
+          Klaar — Gaan na Dashboard
+        </button>
       </div>
     </div>
   );

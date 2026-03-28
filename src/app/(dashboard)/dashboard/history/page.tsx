@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SEVERITY_LEVELS } from "@/lib/inspection-utils";
+import ZoneDisplay from "@/components/dashboard/ZoneDisplay";
 import Link from "next/link";
 
 interface WeedSpecies {
@@ -16,6 +17,14 @@ interface WeedSpecies {
 interface WeedEntry {
   severity: number;
   weed_species_id: string;
+  notes: string | null;
+  zones: number[] | null;
+}
+
+interface WeedCellData {
+  severity: number;
+  notes: string | null;
+  zones: number[] | null;
 }
 
 interface InspectionRow {
@@ -28,7 +37,7 @@ interface InspectionRow {
   cultivar: string | null;
   notes: string | null;
   created_at: string;
-  blocks: { name: string; sort_order: number };
+  blocks: { name: string; sort_order: number; geometry: { lat: number; lng: number }[] | null };
   inspection_stages: { name: string };
   farms: { name: string };
   camp_inspection_weeds: WeedEntry[];
@@ -41,7 +50,8 @@ interface BlockRow {
   crop: string | null;
   cultivar: string | null;
   notes: string | null;
-  weeds: Map<string, number>; // weed_species_id -> severity
+  geometry: { lat: number; lng: number }[] | null;
+  weeds: Map<string, WeedCellData>;
 }
 
 interface InspectionGroup {
@@ -58,6 +68,13 @@ export default function HistoryPage() {
   const [groups, setGroups] = useState<InspectionGroup[]>([]);
   const [weedSpecies, setWeedSpecies] = useState<WeedSpecies[]>([]);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [activePopover, setActivePopover] = useState<{
+    blockId: string;
+    weedId: string;
+    data: WeedCellData;
+    weedName: string;
+    geometry: { lat: number; lng: number }[] | null;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,7 +83,7 @@ export default function HistoryPage() {
         supabase
           .from("camp_inspections" as never)
           .select(
-            "id, farm_id, block_id, stage_id, inspection_date, crop, cultivar, notes, created_at, blocks(name, sort_order), inspection_stages(name), farms(name), camp_inspection_weeds(severity, weed_species_id)" as never
+            "id, farm_id, block_id, stage_id, inspection_date, crop, cultivar, notes, created_at, blocks(name, sort_order, geometry), inspection_stages(name), farms(name), camp_inspection_weeds(severity, weed_species_id, notes, zones)" as never
           )
           .order("created_at" as never, { ascending: false })
           .limit(300),
@@ -97,9 +114,9 @@ export default function HistoryPage() {
           });
         }
         const group = groupMap.get(key)!;
-        const weedMap = new Map<string, number>();
+        const weedMap = new Map<string, WeedCellData>();
         for (const w of insp.camp_inspection_weeds) {
-          weedMap.set(w.weed_species_id, w.severity);
+          weedMap.set(w.weed_species_id, { severity: w.severity, notes: w.notes, zones: w.zones });
         }
         group.blocks.push({
           id: insp.id,
@@ -108,6 +125,7 @@ export default function HistoryPage() {
           crop: insp.crop,
           cultivar: insp.cultivar,
           notes: insp.notes,
+          geometry: insp.blocks?.geometry || null,
           weeds: weedMap,
         });
       }
@@ -170,7 +188,7 @@ export default function HistoryPage() {
             const isExpanded = expandedGroup === group.key;
             const overallMaxSev = Math.max(
               0,
-              ...group.blocks.flatMap((b) => [...b.weeds.values()])
+              ...group.blocks.flatMap((b) => [...b.weeds.values()].map((v) => v.severity))
             );
 
             return (
@@ -348,10 +366,22 @@ export default function HistoryPage() {
                               </Link>
                             </td>
                             {[...grasses, ...broadleaf].map((w) => {
-                              const sev = block.weeds.get(w.id) || 0;
+                              const cell = block.weeds.get(w.id);
+                              const sev = cell?.severity || 0;
+                              const hasNote = !!cell?.notes;
+                              const hasZones = cell?.zones && cell.zones.length > 0;
+                              const hasExtra = hasNote || hasZones;
+                              const isActive = activePopover?.blockId === block.id && activePopover?.weedId === w.id;
                               return (
                                 <td
                                   key={w.id}
+                                  onClick={hasExtra ? () => setActivePopover(isActive ? null : {
+                                    blockId: block.id,
+                                    weedId: w.id,
+                                    data: cell!,
+                                    weedName: w.name,
+                                    geometry: block.geometry,
+                                  }) : undefined}
                                   style={{
                                     textAlign: "center",
                                     padding: "8px 4px",
@@ -359,9 +389,23 @@ export default function HistoryPage() {
                                     color: sev > 0 ? severityColor(sev) : "#e8e8e4",
                                     fontWeight: sev > 0 ? 700 : 400,
                                     fontSize: sev >= 3 ? "10px" : "12px",
+                                    cursor: hasExtra ? "pointer" : "default",
+                                    position: "relative",
+                                    background: isActive ? "#f7f5f0" : "transparent",
                                   }}
                                 >
                                   {sev > 0 ? severityLabel(sev) : "·"}
+                                  {hasExtra && sev > 0 && (
+                                    <span style={{
+                                      position: "absolute",
+                                      top: "3px",
+                                      right: "2px",
+                                      width: "4px",
+                                      height: "4px",
+                                      borderRadius: "50%",
+                                      background: "#D4890A",
+                                    }} />
+                                  )}
                                 </td>
                               );
                             })}
@@ -369,6 +413,58 @@ export default function HistoryPage() {
                         ))}
                       </tbody>
                     </table>
+
+                    {/* Popover for weed note/zone detail */}
+                    {activePopover && group.blocks.some((b) => b.id === activePopover.blockId) && (
+                      <div
+                        style={{
+                          padding: "16px 20px",
+                          background: "#fafaf8",
+                          borderTop: "1px solid #e8e8e4",
+                          display: "flex",
+                          gap: "20px",
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                            <div style={{ fontSize: "14px", fontWeight: 600, color: "#1a1a1a" }}>
+                              {activePopover.weedName}
+                              <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: 700, color: severityColor(activePopover.data.severity), fontFamily: "var(--font-jetbrains), monospace" }}>
+                                {severityLabel(activePopover.data.severity)} {SEVERITY_LEVELS[activePopover.data.severity as 0|1|2|3|4].name}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => setActivePopover(null)}
+                              style={{ background: "none", border: "none", color: "#bbb", fontSize: "16px", cursor: "pointer" }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          {activePopover.data.notes && (
+                            <div style={{ fontSize: "13px", color: "#6b6b6b", lineHeight: 1.5, marginBottom: "8px" }}>
+                              {activePopover.data.notes}
+                            </div>
+                          )}
+                          {!activePopover.data.notes && !activePopover.data.zones?.length && (
+                            <div style={{ fontSize: "13px", color: "#bbb" }}>Geen nota of sones nie.</div>
+                          )}
+                        </div>
+                        {activePopover.data.zones && activePopover.data.zones.length > 0 && activePopover.geometry && (
+                          <div style={{ flexShrink: 0 }}>
+                            <div style={{ fontSize: "10px", color: "#999", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--font-jetbrains), monospace" }}>
+                              Sones
+                            </div>
+                            <ZoneDisplay
+                              geometry={activePopover.geometry}
+                              zones={activePopover.data.zones}
+                              color={severityColor(activePopover.data.severity)}
+                              size={100}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -31,8 +31,8 @@ interface Client {
   name: string;
 }
 
-const cardBg = "rgba(14,26,7,0.6)";
-const cardBorder = "rgba(45,90,27,0.15)";
+const cardBg = "rgba(20,35,12,0.7)";
+const cardBorder = "rgba(55,100,35,0.25)";
 
 export default function FarmDetailPage() {
   const params = useParams();
@@ -184,7 +184,7 @@ export default function FarmDetailPage() {
                 height: "60px",
                 borderRadius: "50%",
                 background: stat.accent,
-                opacity: 0.06,
+                opacity: 0.12,
                 filter: "blur(15px)",
               }}
             />

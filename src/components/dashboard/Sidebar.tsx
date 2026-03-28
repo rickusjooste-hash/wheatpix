@@ -50,8 +50,8 @@ export default function Sidebar({ userEmail, isAgent, isSuper }: SidebarProps) {
       style={{
         width: w,
         minHeight: "100vh",
-        background: "linear-gradient(180deg, #0c1407 0%, #080b04 50%, #0a0d06 100%)",
-        borderRight: "1px solid rgba(45,90,27,0.2)",
+        background: "linear-gradient(180deg, #0e1a08 0%, #0b1306 50%, #0d1607 100%)",
+        borderRight: "1px solid rgba(45,90,27,0.35)",
         display: "flex",
         flexDirection: "column",
         transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -152,9 +152,9 @@ export default function Sidebar({ userEmail, isAgent, isSuper }: SidebarProps) {
                 textDecoration: "none",
                 color: active ? "#F5C842" : hovered ? "rgba(245,237,218,0.85)" : "rgba(245,237,218,0.45)",
                 background: active
-                  ? "rgba(245,200,66,0.08)"
+                  ? "rgba(245,200,66,0.12)"
                   : hovered
-                  ? "rgba(245,237,218,0.03)"
+                  ? "rgba(245,237,218,0.06)"
                   : "transparent",
                 borderRadius: "8px",
                 fontSize: "13px",

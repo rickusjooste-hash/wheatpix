@@ -15,8 +15,8 @@ interface Client {
   name: string;
 }
 
-const cardBg = "rgba(14,26,7,0.6)";
-const cardBorder = "rgba(45,90,27,0.15)";
+const cardBg = "rgba(20,35,12,0.7)";
+const cardBorder = "rgba(55,100,35,0.25)";
 
 export default function FarmsPage() {
   const supabase = createClient();

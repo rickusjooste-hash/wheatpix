@@ -20,7 +20,7 @@ export default async function DashboardLayout({
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(145deg, #080c04 0%, #0d1208 40%, #0a100a 100%)",
+        background: "linear-gradient(145deg, #0f1a0a 0%, #162210 40%, #0f180d 100%)",
         color: "#F5EDDA",
         fontFamily: "var(--font-outfit), 'Outfit', sans-serif",
       }}

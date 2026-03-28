@@ -44,8 +44,8 @@ export default async function DashboardPage() {
 
   const severityColors = ["#333", "#5a8a5a", "#d4a017", "#e87b35", "#e8413c"];
 
-  const cardBg = "rgba(14,26,7,0.6)";
-  const cardBorder = "rgba(45,90,27,0.15)";
+  const cardBg = "rgba(20,35,12,0.7)";
+  const cardBorder = "rgba(55,100,35,0.25)";
 
   return (
     <div>
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
                 height: "80px",
                 borderRadius: "50%",
                 background: s.accent,
-                opacity: 0.06,
+                opacity: 0.12,
                 filter: "blur(20px)",
               }}
             />

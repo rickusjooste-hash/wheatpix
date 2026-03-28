@@ -228,19 +228,22 @@ export function InspectionReport({ data }: { data: ReportData }) {
           {branding.logoUrl && (
             <Image src={branding.logoUrl} style={s.coverLogo} />
           )}
-          <Text style={s.coverFarm}>{data.clientName}</Text>
-          <Text style={s.coverTitle}>Kamp inspeksie verslag</Text>
-          <Text style={s.coverYear}>{data.year}</Text>
-          <Text style={s.coverAgent}>{data.agentName}</Text>
-          <Text style={{ fontSize: 10, color: "#bbb", marginTop: 4 }}>
-            {data.branding.companyName}
+          <Text style={{ fontSize: 36, fontWeight: "bold", color: "#1a1a1a", marginTop: 40 }}>
+            {data.clientName}
           </Text>
-          <Text style={{ fontSize: 10, color: "#bbb", marginTop: 4 }}>
-            {data.farmName} · {data.stageName}
+          <Text style={{ fontSize: 18, color: branding.primaryColor, marginTop: 8 }}>
+            Kamp inspeksie verslag
+          </Text>
+          <Text style={{ fontSize: 48, fontWeight: "bold", color: "#1a1a1a", marginTop: 12 }}>
+            {data.year}
+          </Text>
+          <Text style={{ fontSize: 14, color: "#666", marginTop: 16, fontStyle: "italic" }}>
+            {data.agentName}
           </Text>
         </View>
         <View style={s.footer}>
-          <Text style={s.footerText}>Powered by WheatPix</Text>
+          <Text style={{ fontSize: 8, color: "#ccc" }}>Powered by WheatPix</Text>
+          {branding.logoUrl && <Image src={branding.logoUrl} style={s.footerLogo} />}
         </View>
       </Page>
 

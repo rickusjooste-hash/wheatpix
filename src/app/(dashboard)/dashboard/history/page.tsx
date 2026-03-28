@@ -5,19 +5,43 @@ import { createClient } from "@/lib/supabase/client";
 import { SEVERITY_LEVELS } from "@/lib/inspection-utils";
 import Link from "next/link";
 
+interface WeedSpecies {
+  id: string;
+  name: string;
+  abbreviation: string;
+  category: "grass" | "broadleaf";
+  sort_order: number;
+}
+
+interface WeedEntry {
+  severity: number;
+  weed_species_id: string;
+}
+
 interface InspectionRow {
   id: string;
   farm_id: string;
   block_id: string;
   stage_id: string;
   inspection_date: string;
+  crop: string | null;
+  cultivar: string | null;
   notes: string | null;
   created_at: string;
-  blocks: { name: string };
+  blocks: { name: string; sort_order: number };
   inspection_stages: { name: string };
   farms: { name: string };
-  camp_inspection_weeds: { severity: number; weed_species_id: string }[];
-  camp_inspection_herbicides: { herbicide_id: string }[];
+  camp_inspection_weeds: WeedEntry[];
+}
+
+interface BlockRow {
+  id: string;
+  blockName: string;
+  sortOrder: number;
+  crop: string | null;
+  cultivar: string | null;
+  notes: string | null;
+  weeds: Map<string, number>; // weed_species_id -> severity
 }
 
 interface InspectionGroup {
@@ -25,37 +49,40 @@ interface InspectionGroup {
   farmName: string;
   farmId: string;
   stageName: string;
-  stageId: string;
   date: string;
-  blocks: {
-    id: string;
-    blockName: string;
-    notes: string | null;
-    maxSeverity: number;
-    weedCount: number;
-    herbicideCount: number;
-  }[];
+  blocks: BlockRow[];
 }
 
 export default function HistoryPage() {
   const supabase = createClient();
   const [groups, setGroups] = useState<InspectionGroup[]>([]);
+  const [weedSpecies, setWeedSpecies] = useState<WeedSpecies[]>([]);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("camp_inspections" as never)
-        .select(
-          "id, farm_id, block_id, stage_id, inspection_date, notes, created_at, blocks(name), inspection_stages(name), farms(name), camp_inspection_weeds(severity, weed_species_id), camp_inspection_herbicides(herbicide_id)" as never
-        )
-        .order("created_at" as never, { ascending: false })
-        .limit(200);
+      const [{ data: inspData }, { data: weedData }] = await Promise.all([
+        supabase
+          .from("camp_inspections" as never)
+          .select(
+            "id, farm_id, block_id, stage_id, inspection_date, crop, cultivar, notes, created_at, blocks(name, sort_order), inspection_stages(name), farms(name), camp_inspection_weeds(severity, weed_species_id)" as never
+          )
+          .order("created_at" as never, { ascending: false })
+          .limit(300),
+        supabase
+          .from("weed_species" as never)
+          .select("id, name, abbreviation, category, sort_order" as never)
+          .is("farm_id" as never, null)
+          .eq("is_active" as never, true as never)
+          .order("category" as never)
+          .order("sort_order" as never),
+      ]);
 
-      const inspections = (data || []) as unknown as InspectionRow[];
+      if (weedData) setWeedSpecies(weedData as unknown as WeedSpecies[]);
 
-      // Group by farm + stage + date
+      const inspections = (inspData || []) as unknown as InspectionRow[];
+
       const groupMap = new Map<string, InspectionGroup>();
       for (const insp of inspections) {
         const key = `${insp.farm_id}|${insp.stage_id}|${insp.inspection_date}`;
@@ -65,22 +92,29 @@ export default function HistoryPage() {
             farmName: insp.farms?.name || "—",
             farmId: insp.farm_id,
             stageName: insp.inspection_stages?.name || "—",
-            stageId: insp.stage_id,
             date: insp.inspection_date,
             blocks: [],
           });
         }
         const group = groupMap.get(key)!;
-        const maxSev = Math.max(0, ...insp.camp_inspection_weeds.map((w) => w.severity));
-        const weedCount = insp.camp_inspection_weeds.filter((w) => w.severity > 0).length;
+        const weedMap = new Map<string, number>();
+        for (const w of insp.camp_inspection_weeds) {
+          weedMap.set(w.weed_species_id, w.severity);
+        }
         group.blocks.push({
           id: insp.id,
           blockName: insp.blocks?.name || "—",
+          sortOrder: (insp.blocks as unknown as { sort_order: number })?.sort_order ?? 0,
+          crop: insp.crop,
+          cultivar: insp.cultivar,
           notes: insp.notes,
-          maxSeverity: maxSev,
-          weedCount,
-          herbicideCount: insp.camp_inspection_herbicides?.length || 0,
+          weeds: weedMap,
         });
+      }
+
+      // Sort blocks within each group by sort_order
+      for (const group of groupMap.values()) {
+        group.blocks.sort((a, b) => a.sortOrder - b.sortOrder);
       }
 
       setGroups(Array.from(groupMap.values()));
@@ -89,7 +123,18 @@ export default function HistoryPage() {
     load();
   }, [supabase]);
 
-  const severityColors = ["#ccc", "#4a9a4a", "#d4a017", "#e87b35", "#e8413c"];
+  const grasses = weedSpecies.filter((w) => w.category === "grass");
+  const broadleaf = weedSpecies.filter((w) => w.category === "broadleaf");
+
+  const severityLabel = (sev: number) => {
+    if (sev === 0) return "";
+    return SEVERITY_LEVELS[sev as 1 | 2 | 3 | 4].label;
+  };
+
+  const severityColor = (sev: number) => {
+    if (sev === 0) return "#e8e8e4";
+    return SEVERITY_LEVELS[sev as 1 | 2 | 3 | 4].color;
+  };
 
   if (loading) {
     return <div style={{ color: "#999", fontSize: "14px" }}>Laai inspeksies...</div>;
@@ -120,12 +165,13 @@ export default function HistoryPage() {
           Geen inspeksies gevind nie.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {groups.map((group) => {
             const isExpanded = expandedGroup === group.key;
-            const overallMaxSev = Math.max(0, ...group.blocks.map((b) => b.maxSeverity));
-            const totalWeeds = group.blocks.reduce((s, b) => s + b.weedCount, 0);
-            const totalHerbicides = group.blocks.reduce((s, b) => s + b.herbicideCount, 0);
+            const overallMaxSev = Math.max(
+              0,
+              ...group.blocks.flatMap((b) => [...b.weeds.values()])
+            );
 
             return (
               <div
@@ -137,7 +183,7 @@ export default function HistoryPage() {
                   overflow: "hidden",
                 }}
               >
-                {/* Group header — clickable */}
+                {/* Header */}
                 <button
                   onClick={() => setExpandedGroup(isExpanded ? null : group.key)}
                   style={{
@@ -156,32 +202,11 @@ export default function HistoryPage() {
                     <div style={{ fontSize: "15px", fontWeight: 600, color: "#1a1a1a" }}>
                       {group.farmName}
                     </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        marginTop: "4px",
-                        fontSize: "12px",
-                        color: "#999",
-                      }}
-                    >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", fontSize: "12px", color: "#999" }}>
                       <span>
-                        {new Date(group.date).toLocaleDateString("af-ZA", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {new Date(group.date).toLocaleDateString("af-ZA", { year: "numeric", month: "short", day: "numeric" })}
                       </span>
-                      <span
-                        style={{
-                          padding: "1px 6px",
-                          background: "#f0f0ec",
-                          borderRadius: "4px",
-                          fontSize: "11px",
-                          color: "#6b6b6b",
-                        }}
-                      >
+                      <span style={{ padding: "1px 6px", background: "#f0f0ec", borderRadius: "4px", fontSize: "11px", color: "#6b6b6b" }}>
                         {group.stageName}
                       </span>
                       <span style={{ color: "#bbb" }}>
@@ -189,31 +214,8 @@ export default function HistoryPage() {
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    {totalWeeds > 0 && (
-                      <span style={{ fontSize: "12px", color: "#6b6b6b" }}>
-                        {totalWeeds} onkruid
-                      </span>
-                    )}
-                    {totalHerbicides > 0 && (
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          color: "#D4890A",
-                          fontFamily: "var(--font-jetbrains), monospace",
-                        }}
-                      >
-                        {totalHerbicides} middel{totalHerbicides !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                    <div
-                      style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        background: severityColors[overallMaxSev],
-                      }}
-                    />
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: severityColor(overallMaxSev) }} />
                     <span
                       style={{
                         fontSize: "14px",
@@ -227,61 +229,146 @@ export default function HistoryPage() {
                   </div>
                 </button>
 
-                {/* Expanded block list */}
+                {/* Spreadsheet table */}
                 {isExpanded && (
-                  <div style={{ borderTop: "1px solid #f0f0ec" }}>
-                    {group.blocks.map((block, i) => (
-                      <Link
-                        key={block.id}
-                        href={`/dashboard/history/${block.id}`}
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "14px 20px 14px 36px",
-                          borderBottom: i < group.blocks.length - 1 ? "1px solid #f0f0ec" : "none",
-                          textDecoration: "none",
-                          transition: "background 0.1s",
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontSize: "14px", fontWeight: 500, color: "#1a1a1a" }}>
-                            {block.blockName}
-                          </div>
-                          {block.notes && (
-                            <div
+                  <div style={{ borderTop: "1px solid #f0f0ec", overflowX: "auto" }}>
+                    <table
+                      style={{
+                        borderCollapse: "collapse",
+                        fontSize: "12px",
+                        fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+                        width: "max-content",
+                        minWidth: "100%",
+                      }}
+                    >
+                      <thead>
+                        <tr>
+                          <th
+                            style={{
+                              position: "sticky",
+                              left: 0,
+                              background: "#fafaf8",
+                              padding: "8px 14px",
+                              textAlign: "left",
+                              color: "#999",
+                              borderBottom: "2px solid #e8e8e4",
+                              fontWeight: 600,
+                              fontSize: "11px",
+                              zIndex: 2,
+                              minWidth: "120px",
+                            }}
+                          >
+                            Kampe
+                          </th>
+                          {grasses.length > 0 && (
+                            <th
+                              colSpan={grasses.length}
                               style={{
+                                padding: "4px 0",
+                                textAlign: "center",
+                                color: "#4a9a4a",
+                                borderBottom: "1px solid #e8e8e4",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                letterSpacing: "1px",
+                              }}
+                            >
+                              GRASSE
+                            </th>
+                          )}
+                          {broadleaf.length > 0 && (
+                            <th
+                              colSpan={broadleaf.length}
+                              style={{
+                                padding: "4px 0",
+                                textAlign: "center",
+                                color: "#D4890A",
+                                borderBottom: "1px solid #e8e8e4",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                letterSpacing: "1px",
+                              }}
+                            >
+                              BREEBLAAR
+                            </th>
+                          )}
+                        </tr>
+                        <tr>
+                          <th
+                            style={{
+                              position: "sticky",
+                              left: 0,
+                              background: "#fafaf8",
+                              padding: "6px 14px",
+                              borderBottom: "2px solid #e8e8e4",
+                              zIndex: 2,
+                            }}
+                          />
+                          {[...grasses, ...broadleaf].map((w) => (
+                            <th
+                              key={w.id}
+                              style={{
+                                padding: "6px 4px",
+                                color: "#999",
+                                borderBottom: "2px solid #e8e8e4",
+                                textAlign: "center",
+                                minWidth: "32px",
+                                fontSize: "10px",
+                                fontWeight: 600,
+                              }}
+                              title={w.name}
+                            >
+                              {w.abbreviation}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.blocks.map((block, bi) => (
+                          <tr key={block.id}>
+                            <td
+                              style={{
+                                position: "sticky",
+                                left: 0,
+                                background: "#fff",
+                                padding: "10px 14px",
+                                borderBottom: bi < group.blocks.length - 1 ? "1px solid #f0f0ec" : "none",
+                                fontWeight: 500,
                                 fontSize: "12px",
-                                color: "#bbb",
-                                marginTop: "2px",
-                                maxWidth: "350px",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
+                                color: "#1a1a1a",
+                                zIndex: 2,
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              {block.notes}
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          {block.weedCount > 0 && (
-                            <span style={{ fontSize: "12px", color: "#6b6b6b" }}>
-                              {block.weedCount}
-                            </span>
-                          )}
-                          <div
-                            style={{
-                              width: "8px",
-                              height: "8px",
-                              borderRadius: "50%",
-                              background: severityColors[block.maxSeverity],
-                            }}
-                          />
-                          <span style={{ color: "#ccc", fontSize: "14px" }}>→</span>
-                        </div>
-                      </Link>
-                    ))}
+                              <Link
+                                href={`/dashboard/history/${block.id}`}
+                                style={{ color: "#1a1a1a", textDecoration: "none" }}
+                              >
+                                {block.blockName}
+                              </Link>
+                            </td>
+                            {[...grasses, ...broadleaf].map((w) => {
+                              const sev = block.weeds.get(w.id) || 0;
+                              return (
+                                <td
+                                  key={w.id}
+                                  style={{
+                                    textAlign: "center",
+                                    padding: "8px 4px",
+                                    borderBottom: bi < group.blocks.length - 1 ? "1px solid #f0f0ec" : "none",
+                                    color: sev > 0 ? severityColor(sev) : "#e8e8e4",
+                                    fontWeight: sev > 0 ? 700 : 400,
+                                    fontSize: sev >= 3 ? "10px" : "12px",
+                                  }}
+                                >
+                                  {sev > 0 ? severityLabel(sev) : "·"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>

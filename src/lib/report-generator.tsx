@@ -224,21 +224,27 @@ export function InspectionReport({ data }: { data: ReportData }) {
     <Document>
       {/* Cover Page */}
       <Page size="A4" orientation="landscape" style={s.coverPage}>
-        <View style={s.coverHeader}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 60 }}>
           {branding.logoUrl && (
-            <Image src={branding.logoUrl} style={s.coverLogo} />
+            <Image src={branding.logoUrl} style={{ width: 140, height: 70, objectFit: "contain" as const, marginBottom: 30 }} />
           )}
-          <Text style={{ fontSize: 36, fontWeight: "bold", color: "#1a1a1a", marginTop: 40 }}>
+          <Text style={{ fontSize: 40, fontWeight: "bold", color: "#1a1a1a", textAlign: "center" }}>
             {data.clientName}
           </Text>
-          <Text style={{ fontSize: 18, color: branding.primaryColor, marginTop: 8 }}>
+          <Text style={{ fontSize: 18, color: branding.primaryColor, marginTop: 10, textAlign: "center" }}>
             Kamp inspeksie verslag
           </Text>
-          <Text style={{ fontSize: 48, fontWeight: "bold", color: "#1a1a1a", marginTop: 12 }}>
+          <Text style={{ fontSize: 52, fontWeight: "bold", color: "#1a1a1a", marginTop: 8, textAlign: "center" }}>
             {data.year}
           </Text>
-          <Text style={{ fontSize: 14, color: "#666", marginTop: 16, fontStyle: "italic" }}>
+          <Text style={{ fontSize: 13, color: "#999", marginTop: 6, textAlign: "center" }}>
+            {data.farmName} · {data.stageName}
+          </Text>
+          <Text style={{ fontSize: 14, color: "#666", marginTop: 20, fontStyle: "italic", textAlign: "center" }}>
             {data.agentName}
+          </Text>
+          <Text style={{ fontSize: 10, color: "#bbb", marginTop: 4, textAlign: "center" }}>
+            {data.branding.companyName}
           </Text>
         </View>
         <View style={s.footer}>

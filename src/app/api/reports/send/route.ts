@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     clientName: (farmData?.clients as { name: string } | null)?.name || farmData?.name || "—",
     stageName: stageData?.name || "—",
     inspectionDate,
-    agentName: brandingData?.company_name || user.email || "—",
+    agentName: (user.user_metadata?.full_name as string) || user.email || "—",
     year: new Date(inspectionDate).getFullYear(),
     blocks,
     heatmap: {

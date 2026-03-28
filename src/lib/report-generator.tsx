@@ -233,6 +233,9 @@ export function InspectionReport({ data }: { data: ReportData }) {
           <Text style={s.coverYear}>{data.year}</Text>
           <Text style={s.coverAgent}>{data.agentName}</Text>
           <Text style={{ fontSize: 10, color: "#bbb", marginTop: 4 }}>
+            {data.branding.companyName}
+          </Text>
+          <Text style={{ fontSize: 10, color: "#bbb", marginTop: 4 }}>
             {data.farmName} · {data.stageName}
           </Text>
         </View>

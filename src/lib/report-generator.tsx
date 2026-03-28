@@ -6,8 +6,13 @@ import {
   Text,
   Image,
   StyleSheet,
+  Svg,
+  Path,
+  Rect,
+  ClipPath,
+  Defs,
 } from "@react-pdf/renderer";
-import { SEVERITY_LEVELS } from "./inspection-utils";
+import { SEVERITY_LEVELS, isPointInPolygon } from "./inspection-utils";
 
 // -- Types --
 
@@ -33,8 +38,10 @@ interface ReportBlock {
   name: string;
   weeds: ReportWeed[];
   herbicides: ReportHerbicide[];
-  photoUrl: string | null;
+  photoUrls: string[];
   notes: string | null;
+  geometry: { lat: number; lng: number }[] | null;
+  weedZones: { weedName: string; zones: number[]; color: string }[];
 }
 
 interface ReportHeatmapRow {
@@ -106,6 +113,106 @@ const sevColor = (sev: number) => {
   if (sev <= 0 || sev > 4) return "#e8e8e4";
   return SEVERITY_LEVELS[sev as 1 | 2 | 3 | 4].color;
 };
+
+// -- Block Polygon Component --
+
+const GRID_SIZE = 4;
+const POLY_SIZE = 150;
+const POLY_PAD = 8;
+
+function geoToSvgPoints(polygon: { lat: number; lng: number }[]) {
+  const lats = polygon.map((p) => p.lat);
+  const lngs = polygon.map((p) => p.lng);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+  const latRange = maxLat - minLat || 1e-6;
+  const lngRange = maxLng - minLng || 1e-6;
+  const draw = POLY_SIZE - POLY_PAD * 2;
+  const scale = Math.min(draw / lngRange, draw / latRange);
+  const ox = POLY_PAD + (draw - lngRange * scale) / 2;
+  const oy = POLY_PAD + (draw - latRange * scale) / 2;
+
+  const pts = polygon.map((p) => ({
+    x: ox + (p.lng - minLng) * scale,
+    y: oy + (maxLat - p.lat) * scale,
+  }));
+
+  const bx = Math.min(...pts.map((p) => p.x));
+  const by = Math.min(...pts.map((p) => p.y));
+  const bw = Math.max(...pts.map((p) => p.x)) - bx;
+  const bh = Math.max(...pts.map((p) => p.y)) - by;
+
+  return { pts, bbox: { x: bx, y: by, w: bw, h: bh }, minLat, maxLat, minLng, maxLng };
+}
+
+function BlockPolygon({ geometry, weedZones }: { geometry: { lat: number; lng: number }[]; weedZones: { zones: number[]; color: string }[] }) {
+  const { pts, bbox, minLat, maxLat, minLng, maxLng } = geoToSvgPoints(geometry);
+  const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ") + " Z";
+
+  // Merge all zones with their colors
+  const allZones = new Map<number, string>();
+  for (const wz of weedZones) {
+    for (const z of wz.zones) {
+      if (!allZones.has(z)) allZones.set(z, wz.color);
+    }
+  }
+
+  const cellW = bbox.w / GRID_SIZE;
+  const cellH = bbox.h / GRID_SIZE;
+  const latRange = maxLat - minLat || 1e-6;
+  const lngRange = maxLng - minLng || 1e-6;
+
+  const cells: { idx: number; x: number; y: number; w: number; h: number; inside: boolean }[] = [];
+  for (let idx = 0; idx < GRID_SIZE * GRID_SIZE; idx++) {
+    const col = idx % GRID_SIZE;
+    const row = Math.floor(idx / GRID_SIZE);
+    const x = bbox.x + col * cellW;
+    const y = bbox.y + row * cellH;
+
+    const svxToGeo = (sx: number, sy: number) => ({
+      lng: minLng + ((sx - bbox.x) / bbox.w) * lngRange,
+      lat: maxLat - ((sy - bbox.y) / bbox.h) * latRange,
+    });
+
+    const samples = [
+      svxToGeo(x + cellW * 0.5, y + cellH * 0.5),
+      svxToGeo(x, y), svxToGeo(x + cellW, y),
+      svxToGeo(x, y + cellH), svxToGeo(x + cellW, y + cellH),
+    ];
+    const inside = samples.some((p) => isPointInPolygon(p, geometry));
+    cells.push({ idx, x, y, w: cellW, h: cellH, inside });
+  }
+
+  return (
+    <Svg width={POLY_SIZE} height={POLY_SIZE} viewBox={`0 0 ${POLY_SIZE} ${POLY_SIZE}`}>
+      <Defs>
+        <ClipPath id="bp">
+          <Path d={pathD} />
+        </ClipPath>
+      </Defs>
+      <Path d={pathD} fill="#f0f0ec" stroke="#d4d4d0" strokeWidth={1} />
+      {cells.map((c) => {
+        if (!c.inside) return null;
+        const color = allZones.get(c.idx);
+        return (
+          <Rect
+            key={c.idx}
+            x={c.x}
+            y={c.y}
+            width={c.w}
+            height={c.h}
+            fill={color || "transparent"}
+            opacity={color ? 0.4 : 0}
+            stroke="#d4d4d0"
+            strokeWidth={0.3}
+            clipPath="url(#bp)"
+          />
+        );
+      })}
+      <Path d={pathD} fill="none" stroke="#999" strokeWidth={1} />
+    </Svg>
+  );
+}
 
 // -- Document --
 
@@ -196,7 +303,7 @@ export function InspectionReport({ data }: { data: ReportData }) {
             <Text style={s.headerText}>Kamp inspeksie {data.year}</Text>
           </View>
 
-          <View style={{ flexDirection: "row", gap: 30 }}>
+          <View style={{ flexDirection: "row", gap: 24 }}>
             {/* Left: camp info */}
             <View style={{ flex: 1 }}>
               <Text style={s.campLabel}>Kampnaam:</Text>
@@ -229,12 +336,21 @@ export function InspectionReport({ data }: { data: ReportData }) {
                   <Text style={{ fontSize: 9, color: "#666", paddingLeft: 12 }}>{block.notes}</Text>
                 </View>
               )}
+
+              {/* Block polygon with zones */}
+              {block.geometry && block.geometry.length >= 3 && (
+                <View style={{ marginTop: 12 }}>
+                  <BlockPolygon geometry={block.geometry} weedZones={block.weedZones} />
+                </View>
+              )}
             </View>
 
-            {/* Right: photo */}
-            {block.photoUrl && (
-              <View style={{ width: 320 }}>
-                <Image src={block.photoUrl} style={s.photo} />
+            {/* Right: photos */}
+            {block.photoUrls.length > 0 && (
+              <View style={{ width: 300 }}>
+                {block.photoUrls.map((url, pi) => (
+                  <Image key={pi} src={url} style={[s.photo, pi > 0 ? { marginTop: 8 } : {}]} />
+                ))}
               </View>
             )}
           </View>

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { InspectionReport, type ReportData } from "@/lib/report-generator";
+import { SEVERITY_LEVELS } from "@/lib/inspection-utils";
 import React from "react";
 
 export async function POST(req: NextRequest) {
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   ] = await Promise.all([
     supabase
       .from("camp_inspections")
-      .select("id, block_id, notes, blocks(name, sort_order), camp_inspection_weeds(severity, notes, weed_species_id, weed_species(name, abbreviation, category)), camp_inspection_herbicides(herbicides(name, active_ingredients)), camp_inspection_photos(storage_path, sort_order)")
+      .select("id, block_id, notes, blocks(name, sort_order, geometry), camp_inspection_weeds(severity, notes, zones, weed_species_id, weed_species(name, abbreviation, category)), camp_inspection_herbicides(herbicides(name, active_ingredients)), camp_inspection_photos(storage_path, sort_order)")
       .eq("farm_id", farmId)
       .eq("stage_id", stageId)
       .eq("inspection_date", inspectionDate)
@@ -81,24 +82,34 @@ export async function POST(req: NextRequest) {
       id: string;
       block_id: string;
       notes: string | null;
-      blocks: { name: string; sort_order: number };
-      camp_inspection_weeds: { severity: number; notes: string | null; weed_species_id: string; weed_species: { name: string; abbreviation: string; category: string } }[];
+      blocks: { name: string; sort_order: number; geometry: { lat: number; lng: number }[] | null };
+      camp_inspection_weeds: { severity: number; notes: string | null; zones: number[] | null; weed_species_id: string; weed_species: { name: string; abbreviation: string; category: string } }[];
       camp_inspection_herbicides: { herbicides: { name: string; active_ingredients: string[] } }[];
       camp_inspection_photos: { storage_path: string; sort_order: number }[];
     };
 
-    let photoUrl: string | null = null;
+    const photoUrls: string[] = [];
     if (i.camp_inspection_photos?.length > 0) {
       const sorted = [...i.camp_inspection_photos].sort((a, b) => a.sort_order - b.sort_order);
-      const { data: signedUrl } = await supabase.storage
-        .from("inspection-photos")
-        .createSignedUrl(sorted[0].storage_path, 3600);
-      if (signedUrl) photoUrl = signedUrl.signedUrl;
+      for (const photo of sorted) {
+        const { data: signedUrl } = await supabase.storage
+          .from("inspection-photos")
+          .createSignedUrl(photo.storage_path, 3600);
+        if (signedUrl) photoUrls.push(signedUrl.signedUrl);
+      }
     }
 
     const blockWeeds = (i.camp_inspection_weeds || [])
       .filter((w) => w.severity > 0)
       .sort((a, b) => b.severity - a.severity);
+
+    const weedZones = blockWeeds
+      .filter((w) => w.zones && w.zones.length > 0)
+      .map((w) => ({
+        weedName: w.weed_species?.name || "—",
+        zones: w.zones as number[],
+        color: SEVERITY_LEVELS[w.severity as 1|2|3|4]?.color || "#999",
+      }));
 
     blocks.push({
       name: i.blocks?.name || "—",
@@ -112,8 +123,10 @@ export async function POST(req: NextRequest) {
         name: h.herbicides?.name || "—",
         activeIngredients: h.herbicides?.active_ingredients || [],
       })),
-      photoUrl,
+      photoUrls,
       notes: i.notes,
+      geometry: i.blocks?.geometry || null,
+      weedZones,
     });
 
     const sevMap = new Map<string, number>();

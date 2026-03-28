@@ -15,6 +15,9 @@ interface Client {
   name: string;
 }
 
+const cardBg = "rgba(14,26,7,0.6)";
+const cardBorder = "rgba(45,90,27,0.15)";
+
 export default function FarmsPage() {
   const supabase = createClient();
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -61,10 +64,9 @@ export default function FarmsPage() {
   };
 
   if (loading) {
-    return <div style={{ color: "rgba(245,237,218,0.4)", fontSize: "13px" }}>Laai plase...</div>;
+    return <div style={{ color: "rgba(245,237,218,0.25)", fontSize: "13px", fontFamily: "var(--font-jetbrains), monospace" }}>Laai plase...</div>;
   }
 
-  // Group by client
   const grouped = new Map<string, Farm[]>();
   const unassigned: Farm[] = [];
   for (const f of farms) {
@@ -77,26 +79,53 @@ export default function FarmsPage() {
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    padding: "12px 16px",
+    background: "rgba(8,12,4,0.8)",
+    border: "1px solid rgba(45,90,27,0.25)",
+    borderRadius: "10px",
+    color: "#F5EDDA",
+    fontSize: "14px",
+    fontFamily: "var(--font-outfit), sans-serif",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+  };
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "36px" }}>
         <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#F5EDDA", margin: 0 }}>Plase</h1>
-          <p style={{ fontSize: "13px", color: "rgba(245,237,218,0.4)", margin: "4px 0 0" }}>
-            {farms.length} plas{farms.length !== 1 ? "e" : ""}
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 600,
+              color: "rgba(245,237,218,0.25)",
+              letterSpacing: "3px",
+              textTransform: "uppercase",
+              fontFamily: "var(--font-jetbrains), monospace",
+              marginBottom: "8px",
+            }}
+          >
+            Bestuur
+          </div>
+          <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#F5EDDA", margin: 0 }}>Plase</h1>
+          <p style={{ fontSize: "13px", color: "rgba(245,237,218,0.3)", margin: "6px 0 0" }}>
+            {farms.length} plas{farms.length !== 1 ? "e" : ""} geregistreer
           </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
           style={{
-            padding: "10px 20px",
-            background: "#F5C842",
+            padding: "12px 24px",
+            background: "linear-gradient(135deg, #D4890A 0%, #F5C842 100%)",
             border: "none",
-            borderRadius: "8px",
+            borderRadius: "10px",
             color: "#0E1A07",
             fontSize: "13px",
             fontWeight: 700,
             cursor: "pointer",
+            boxShadow: "0 2px 16px rgba(212,137,10,0.2)",
           }}
         >
           + Nuwe Plaas
@@ -107,57 +136,45 @@ export default function FarmsPage() {
       {showCreate && (
         <div
           style={{
-            padding: "20px",
-            background: "#111a08",
-            border: "1px solid #2D5A1B",
-            borderRadius: "12px",
-            marginBottom: "24px",
+            padding: "24px",
+            background: cardBg,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: "14px",
+            marginBottom: "28px",
+            backdropFilter: "blur(12px)",
           }}
         >
-          <div style={{ fontSize: "14px", fontWeight: 600, color: "#F5EDDA", marginBottom: "12px" }}>
+          <div style={{ fontSize: "15px", fontWeight: 600, color: "#F5EDDA", marginBottom: "16px" }}>
             Nuwe Plaas
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <input
               type="text"
               placeholder="Plaas naam"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              style={{
-                padding: "10px 14px",
-                background: "#0a0f05",
-                border: "1px solid #2D5A1B",
-                borderRadius: "8px",
-                color: "#F5EDDA",
-                fontSize: "14px",
-              }}
+              autoFocus
+              style={inputStyle}
             />
             <select
               value={newClientId}
               onChange={(e) => setNewClientId(e.target.value)}
-              style={{
-                padding: "10px 14px",
-                background: "#0a0f05",
-                border: "1px solid #2D5A1B",
-                borderRadius: "8px",
-                color: "#F5EDDA",
-                fontSize: "14px",
-              }}
+              style={{ ...inputStyle, appearance: "none" }}
             >
               <option value="">Geen kliënt</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
               <button
                 onClick={() => setShowCreate(false)}
                 style={{
-                  padding: "10px 20px",
+                  padding: "12px 24px",
                   background: "transparent",
-                  border: "1px solid #2D5A1B",
-                  borderRadius: "8px",
-                  color: "rgba(245,237,218,0.6)",
+                  border: "1px solid rgba(245,237,218,0.1)",
+                  borderRadius: "10px",
+                  color: "rgba(245,237,218,0.5)",
                   fontSize: "13px",
                   cursor: "pointer",
                 }}
@@ -167,17 +184,17 @@ export default function FarmsPage() {
               <button
                 onClick={handleCreate}
                 style={{
-                  padding: "10px 20px",
-                  background: "#2D5A1B",
-                  border: "none",
-                  borderRadius: "8px",
+                  padding: "12px 24px",
+                  background: "rgba(45,90,27,0.4)",
+                  border: "1px solid rgba(45,90,27,0.5)",
+                  borderRadius: "10px",
                   color: "#F5EDDA",
                   fontSize: "13px",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
               >
-                Skep
+                Skep Plaas
               </button>
             </div>
           </div>
@@ -186,21 +203,22 @@ export default function FarmsPage() {
 
       {/* Grouped farm list */}
       {[...grouped.entries()].map(([clientId, clientFarms]) => (
-        <div key={clientId} style={{ marginBottom: "24px" }}>
+        <div key={clientId} style={{ marginBottom: "28px" }}>
           <div
             style={{
               fontSize: "11px",
               fontWeight: 700,
-              color: "rgba(245,237,218,0.3)",
+              color: "rgba(245,237,218,0.2)",
               letterSpacing: "2px",
               textTransform: "uppercase",
-              marginBottom: "10px",
+              marginBottom: "12px",
               fontFamily: "var(--font-jetbrains), monospace",
+              paddingLeft: "4px",
             }}
           >
             {clientMap.get(clientId) || "Onbekend"}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {clientFarms.map((f) => (
               <Link
                 key={f.id}
@@ -209,18 +227,19 @@ export default function FarmsPage() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "14px 18px",
-                  background: "#111a08",
-                  border: "1px solid #1a2e0d",
-                  borderRadius: "10px",
+                  padding: "16px 20px",
+                  background: cardBg,
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: "12px",
                   textDecoration: "none",
-                  transition: "border-color 0.15s",
+                  backdropFilter: "blur(12px)",
+                  transition: "border-color 0.2s, transform 0.1s",
                 }}
               >
-                <span style={{ fontSize: "15px", fontWeight: 600, color: "#F5EDDA" }}>
+                <span style={{ fontSize: "15px", fontWeight: 600, color: "#F5EDDA", letterSpacing: "0.2px" }}>
                   {f.name}
                 </span>
-                <span style={{ color: "rgba(245,237,218,0.3)", fontSize: "14px" }}>→</span>
+                <span style={{ color: "rgba(245,237,218,0.2)", fontSize: "16px" }}>→</span>
               </Link>
             ))}
           </div>
@@ -228,21 +247,22 @@ export default function FarmsPage() {
       ))}
 
       {unassigned.length > 0 && (
-        <div style={{ marginBottom: "24px" }}>
+        <div style={{ marginBottom: "28px" }}>
           <div
             style={{
               fontSize: "11px",
               fontWeight: 700,
-              color: "rgba(245,237,218,0.3)",
+              color: "rgba(245,237,218,0.2)",
               letterSpacing: "2px",
               textTransform: "uppercase",
-              marginBottom: "10px",
+              marginBottom: "12px",
               fontFamily: "var(--font-jetbrains), monospace",
+              paddingLeft: "4px",
             }}
           >
-            Nie toegewys
+            Nie Toegewys
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {unassigned.map((f) => (
               <Link
                 key={f.id}
@@ -251,17 +271,18 @@ export default function FarmsPage() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "14px 18px",
-                  background: "#111a08",
-                  border: "1px solid #1a2e0d",
-                  borderRadius: "10px",
+                  padding: "16px 20px",
+                  background: cardBg,
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: "12px",
                   textDecoration: "none",
+                  backdropFilter: "blur(12px)",
                 }}
               >
                 <span style={{ fontSize: "15px", fontWeight: 600, color: "#F5EDDA" }}>
                   {f.name}
                 </span>
-                <span style={{ color: "rgba(245,237,218,0.3)", fontSize: "14px" }}>→</span>
+                <span style={{ color: "rgba(245,237,218,0.2)", fontSize: "16px" }}>→</span>
               </Link>
             ))}
           </div>

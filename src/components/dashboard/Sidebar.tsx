@@ -13,10 +13,10 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Oorsig", icon: "◎", agentOnly: false, superOnly: false },
+  { href: "/dashboard", label: "Oorsig", icon: "⬡", agentOnly: false, superOnly: false },
   { href: "/dashboard/clients", label: "Kliënte", icon: "◈", agentOnly: true, superOnly: false },
-  { href: "/dashboard/farms", label: "Plase", icon: "◇", agentOnly: false, superOnly: false },
-  { href: "/dashboard/history", label: "Inspeksies", icon: "◆", agentOnly: false, superOnly: false },
+  { href: "/dashboard/farms", label: "Plase", icon: "⬢", agentOnly: false, superOnly: false },
+  { href: "/dashboard/history", label: "Inspeksies", icon: "◉", agentOnly: false, superOnly: false },
   { href: "/admin", label: "Admin", icon: "⚙", agentOnly: false, superOnly: true },
 ];
 
@@ -24,6 +24,7 @@ export default function Sidebar({ userEmail, isAgent, isSuper }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -42,39 +43,44 @@ export default function Sidebar({ userEmail, isAgent, isSuper }: SidebarProps) {
     return pathname.startsWith(href);
   };
 
+  const w = collapsed ? "68px" : "240px";
+
   return (
     <aside
       style={{
-        width: collapsed ? "64px" : "220px",
+        width: w,
         minHeight: "100vh",
-        background: "#0E1A07",
-        borderRight: "1px solid #1a2e0d",
+        background: "linear-gradient(180deg, #0c1407 0%, #080b04 50%, #0a0d06 100%)",
+        borderRight: "1px solid rgba(45,90,27,0.2)",
         display: "flex",
         flexDirection: "column",
-        transition: "width 0.2s ease",
+        transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
         position: "fixed",
         top: 0,
         left: 0,
         zIndex: 100,
+        boxShadow: "4px 0 24px rgba(0,0,0,0.3)",
       }}
     >
       {/* Brand */}
       <div
         style={{
-          padding: collapsed ? "20px 12px" : "20px 20px",
-          borderBottom: "1px solid #1a2e0d",
+          padding: collapsed ? "24px 14px" : "24px 24px",
+          borderBottom: "1px solid rgba(45,90,27,0.15)",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: collapsed ? "center" : "space-between",
+          minHeight: "72px",
         }}
       >
         {!collapsed && (
           <Link href="/dashboard" style={{ textDecoration: "none" }}>
             <span
               style={{
-                fontSize: "18px",
+                fontSize: "20px",
                 color: "#F5EDDA",
                 fontFamily: "var(--font-dm-serif), 'DM Serif Display', serif",
+                letterSpacing: "0.5px",
               }}
             >
               Wheat<span style={{ color: "#D4890A", fontFamily: "var(--font-jetbrains), 'Space Mono', monospace" }}>Pıx</span>
@@ -84,15 +90,17 @@ export default function Sidebar({ userEmail, isAgent, isSuper }: SidebarProps) {
         <button
           onClick={() => setCollapsed(!collapsed)}
           style={{
-            background: "none",
-            border: "none",
-            color: "#555555",
-            fontSize: "14px",
+            background: "rgba(245,237,218,0.04)",
+            border: "1px solid rgba(245,237,218,0.06)",
+            color: "rgba(245,237,218,0.3)",
+            fontSize: "12px",
             cursor: "pointer",
-            padding: "4px",
+            padding: "6px 8px",
+            borderRadius: "6px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            transition: "all 0.15s",
           }}
         >
           {collapsed ? "▸" : "◂"}
@@ -100,7 +108,7 @@ export default function Sidebar({ userEmail, isAgent, isSuper }: SidebarProps) {
       </div>
 
       {/* New inspection button */}
-      <div style={{ padding: collapsed ? "12px 8px" : "16px 16px" }}>
+      <div style={{ padding: collapsed ? "16px 10px" : "20px 20px" }}>
         <Link
           href="/inspections/new"
           style={{
@@ -108,14 +116,16 @@ export default function Sidebar({ userEmail, isAgent, isSuper }: SidebarProps) {
             alignItems: "center",
             justifyContent: "center",
             gap: "8px",
-            padding: collapsed ? "10px" : "10px 16px",
-            background: "#F5C842",
-            borderRadius: "8px",
+            padding: collapsed ? "12px" : "12px 20px",
+            background: "linear-gradient(135deg, #D4890A 0%, #F5C842 100%)",
+            borderRadius: "10px",
             textDecoration: "none",
             color: "#0E1A07",
             fontSize: "13px",
             fontWeight: 700,
             fontFamily: "var(--font-jetbrains), monospace",
+            boxShadow: "0 2px 12px rgba(212,137,10,0.25)",
+            transition: "box-shadow 0.2s, transform 0.15s",
           }}
         >
           {collapsed ? "+" : "+ Inspeksie"}
@@ -123,54 +133,94 @@ export default function Sidebar({ userEmail, isAgent, isSuper }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav style={{ flex: 1, padding: "8px 0" }}>
+      <nav style={{ flex: 1, padding: "4px 0" }}>
         {filteredItems.map((item) => {
           const active = isActive(item.href);
+          const hovered = hoveredItem === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
+              onMouseEnter={() => setHoveredItem(item.href)}
+              onMouseLeave={() => setHoveredItem(null)}
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "12px",
-                padding: collapsed ? "12px 20px" : "10px 20px",
-                marginBottom: "2px",
+                gap: "14px",
+                padding: collapsed ? "14px 22px" : "12px 24px",
+                margin: "2px 8px",
                 textDecoration: "none",
-                color: active ? "#F5C842" : "rgba(245,237,218,0.6)",
-                background: active ? "rgba(245,200,66,0.08)" : "transparent",
-                borderRight: active ? "3px solid #F5C842" : "3px solid transparent",
+                color: active ? "#F5C842" : hovered ? "rgba(245,237,218,0.85)" : "rgba(245,237,218,0.45)",
+                background: active
+                  ? "rgba(245,200,66,0.08)"
+                  : hovered
+                  ? "rgba(245,237,218,0.03)"
+                  : "transparent",
+                borderRadius: "8px",
                 fontSize: "13px",
                 fontWeight: active ? 600 : 400,
                 transition: "all 0.15s ease",
+                position: "relative",
               }}
             >
-              <span style={{ fontSize: "16px", width: "24px", textAlign: "center" }}>
+              {active && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "-8px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "3px",
+                    height: "20px",
+                    background: "linear-gradient(180deg, #F5C842, #D4890A)",
+                    borderRadius: "2px",
+                  }}
+                />
+              )}
+              <span
+                style={{
+                  fontSize: "15px",
+                  width: "24px",
+                  textAlign: "center",
+                  opacity: active ? 1 : 0.7,
+                }}
+              >
                 {item.icon}
               </span>
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && (
+                <span style={{ letterSpacing: "0.3px" }}>{item.label}</span>
+              )}
             </Link>
           );
         })}
       </nav>
 
+      {/* Divider */}
+      <div
+        style={{
+          margin: "0 20px",
+          height: "1px",
+          background: "linear-gradient(90deg, transparent, rgba(45,90,27,0.2), transparent)",
+        }}
+      />
+
       {/* User info + logout */}
       <div
         style={{
-          padding: collapsed ? "16px 8px" : "16px",
-          borderTop: "1px solid #1a2e0d",
+          padding: collapsed ? "20px 10px" : "20px",
         }}
       >
         {!collapsed && (
           <div
             style={{
               fontSize: "11px",
-              color: "rgba(245,237,218,0.4)",
-              marginBottom: "8px",
+              color: "rgba(245,237,218,0.25)",
+              marginBottom: "10px",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
               fontFamily: "var(--font-jetbrains), monospace",
+              letterSpacing: "0.3px",
             }}
           >
             {userEmail}
@@ -184,16 +234,17 @@ export default function Sidebar({ userEmail, isAgent, isSuper }: SidebarProps) {
             justifyContent: collapsed ? "center" : "flex-start",
             gap: "8px",
             width: "100%",
-            padding: "8px 12px",
-            background: "rgba(245,237,218,0.05)",
-            border: "1px solid #1a2e0d",
-            borderRadius: "6px",
-            color: "rgba(245,237,218,0.5)",
+            padding: "10px 14px",
+            background: "rgba(245,237,218,0.03)",
+            border: "1px solid rgba(245,237,218,0.06)",
+            borderRadius: "8px",
+            color: "rgba(245,237,218,0.4)",
             fontSize: "12px",
             cursor: "pointer",
+            transition: "all 0.15s",
           }}
         >
-          <span>↗</span>
+          <span style={{ fontSize: "14px" }}>↗</span>
           {!collapsed && <span>Teken Uit</span>}
         </button>
       </div>

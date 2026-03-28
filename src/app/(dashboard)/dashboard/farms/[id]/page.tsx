@@ -31,6 +31,9 @@ interface Client {
   name: string;
 }
 
+const cardBg = "rgba(14,26,7,0.6)";
+const cardBorder = "rgba(45,90,27,0.15)";
+
 export default function FarmDetailPage() {
   const params = useParams();
   const farmId = params.id as string;
@@ -45,7 +48,6 @@ export default function FarmDetailPage() {
 
   useEffect(() => {
     async function load() {
-      // Load farm
       const { data: farmData } = await supabase
         .from("farms" as never)
         .select("id, name, client_id")
@@ -54,8 +56,6 @@ export default function FarmDetailPage() {
       if (farmData) {
         const f = farmData as unknown as Farm;
         setFarm(f);
-
-        // Load client if assigned
         if (f.client_id) {
           const { data: clientData } = await supabase
             .from("clients" as never)
@@ -66,7 +66,6 @@ export default function FarmDetailPage() {
         }
       }
 
-      // Load blocks
       const { data: blockData } = await supabase
         .from("blocks" as never)
         .select("id, name, area_hectares, is_active, sort_order")
@@ -74,7 +73,6 @@ export default function FarmDetailPage() {
         .order("sort_order" as never);
       if (blockData) setBlocks(blockData as unknown as Block[]);
 
-      // Load current season
       const currentYear = new Date().getFullYear();
       const { data: seasonData } = await supabase
         .from("block_seasons" as never)
@@ -88,7 +86,6 @@ export default function FarmDetailPage() {
         setSeasons(sm);
       }
 
-      // Inspection count
       const { count } = await supabase
         .from("camp_inspections" as never)
         .select("id", { count: "exact", head: true })
@@ -101,11 +98,11 @@ export default function FarmDetailPage() {
   }, [supabase, farmId]);
 
   if (loading) {
-    return <div style={{ color: "rgba(245,237,218,0.4)", fontSize: "13px" }}>Laai plaas...</div>;
+    return <div style={{ color: "rgba(245,237,218,0.25)", fontSize: "13px" }}>Laai plaas...</div>;
   }
 
   if (!farm) {
-    return <div style={{ color: "rgba(245,237,218,0.4)", fontSize: "13px" }}>Plaas nie gevind nie.</div>;
+    return <div style={{ color: "rgba(245,237,218,0.25)", fontSize: "13px" }}>Plaas nie gevind nie.</div>;
   }
 
   const totalHa = blocks.reduce((sum, b) => sum + (b.area_hectares || 0), 0);
@@ -113,21 +110,26 @@ export default function FarmDetailPage() {
   return (
     <div>
       {/* Breadcrumb */}
-      <div style={{ marginBottom: "8px" }}>
-        <Link
-          href="/dashboard/farms"
-          style={{ fontSize: "12px", color: "rgba(245,237,218,0.4)", textDecoration: "none" }}
-        >
-          ← Plase
-        </Link>
-      </div>
+      <Link
+        href="/dashboard/farms"
+        style={{
+          fontSize: "12px",
+          color: "rgba(245,237,218,0.3)",
+          textDecoration: "none",
+          fontFamily: "var(--font-jetbrains), monospace",
+          display: "inline-block",
+          marginBottom: "16px",
+        }}
+      >
+        ← Plase
+      </Link>
 
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "36px" }}>
         <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#F5EDDA", margin: 0 }}>{farm.name}</h1>
+          <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#F5EDDA", margin: 0 }}>{farm.name}</h1>
           {client && (
-            <p style={{ fontSize: "13px", color: "rgba(245,237,218,0.4)", margin: "4px 0 0" }}>
+            <p style={{ fontSize: "13px", color: "rgba(245,237,218,0.3)", margin: "6px 0 0" }}>
               {client.name}
             </p>
           )}
@@ -138,46 +140,74 @@ export default function FarmDetailPage() {
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            padding: "10px 20px",
-            background: "#2D5A1B",
-            border: "none",
-            borderRadius: "8px",
+            padding: "12px 24px",
+            background: "rgba(45,90,27,0.3)",
+            border: "1px solid rgba(45,90,27,0.4)",
+            borderRadius: "10px",
             color: "#F5EDDA",
             fontSize: "13px",
             fontWeight: 700,
             textDecoration: "none",
+            backdropFilter: "blur(8px)",
           }}
         >
-          ⊞ Kaart
+          ⊞ Kaart & Kampe
         </Link>
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "14px", marginBottom: "36px" }}>
         {[
-          { label: "Kampe", value: blocks.length.toString() },
-          { label: "Hektaar", value: totalHa > 0 ? totalHa.toFixed(1) : "—" },
-          { label: "Inspeksies", value: inspectionCount.toString() },
+          { label: "Kampe", value: blocks.length.toString(), accent: "#4a9a4a" },
+          { label: "Totale Hektaar", value: totalHa > 0 ? totalHa.toFixed(1) : "—", accent: "#F5C842" },
+          { label: "Inspeksies", value: inspectionCount.toString(), accent: "#D4890A" },
         ].map((stat) => (
           <div
             key={stat.label}
             style={{
-              padding: "16px",
-              background: "#111a08",
-              border: "1px solid #1a2e0d",
-              borderRadius: "10px",
+              padding: "22px",
+              background: cardBg,
+              border: `1px solid ${cardBorder}`,
+              borderRadius: "14px",
               textAlign: "center",
+              backdropFilter: "blur(12px)",
+              position: "relative",
+              overflow: "hidden",
             }}
           >
-            <div style={{ fontSize: "22px", fontWeight: 700, color: "#F5C842" }}>{stat.value}</div>
+            <div
+              style={{
+                position: "absolute",
+                top: "-15px",
+                right: "-15px",
+                width: "60px",
+                height: "60px",
+                borderRadius: "50%",
+                background: stat.accent,
+                opacity: 0.06,
+                filter: "blur(15px)",
+              }}
+            />
+            <div
+              style={{
+                fontSize: "28px",
+                fontWeight: 700,
+                color: stat.accent,
+                fontFamily: "var(--font-jetbrains), monospace",
+                position: "relative",
+              }}
+            >
+              {stat.value}
+            </div>
             <div
               style={{
                 fontSize: "10px",
-                color: "rgba(245,237,218,0.4)",
-                marginTop: "4px",
+                color: "rgba(245,237,218,0.3)",
+                marginTop: "6px",
                 textTransform: "uppercase",
-                letterSpacing: "1px",
+                letterSpacing: "1.5px",
                 fontFamily: "var(--font-jetbrains), monospace",
+                position: "relative",
               }}
             >
               {stat.label}
@@ -187,22 +217,16 @@ export default function FarmDetailPage() {
       </div>
 
       {/* Blocks list */}
-      <div style={{ marginBottom: "24px" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "12px",
-          }}
-        >
-          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#F5EDDA", margin: 0 }}>Kampe</h2>
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, color: "#F5EDDA", margin: 0 }}>Kampe</h2>
           <Link
             href={`/dashboard/farms/${farmId}/map`}
             style={{
               fontSize: "12px",
-              color: "#F5C842",
+              color: "rgba(245,200,66,0.7)",
               textDecoration: "none",
+              fontFamily: "var(--font-jetbrains), monospace",
             }}
           >
             Teken nuwe kamp →
@@ -212,19 +236,20 @@ export default function FarmDetailPage() {
         {blocks.length === 0 ? (
           <div
             style={{
-              padding: "40px",
+              padding: "48px",
               textAlign: "center",
-              color: "rgba(245,237,218,0.3)",
-              fontSize: "13px",
-              background: "#111a08",
-              border: "1px dashed #1a2e0d",
-              borderRadius: "10px",
+              color: "rgba(245,237,218,0.2)",
+              fontSize: "14px",
+              background: cardBg,
+              border: `1px dashed ${cardBorder}`,
+              borderRadius: "14px",
+              backdropFilter: "blur(12px)",
             }}
           >
             Geen kampe nie. Gebruik die kaart om kampe te teken.
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {blocks.map((b) => {
               const season = seasons[b.id];
               return (
@@ -234,11 +259,12 @@ export default function FarmDetailPage() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "12px 16px",
-                    background: "#111a08",
-                    border: `1px solid ${b.is_active ? "#1a2e0d" : "#1a1a0d"}`,
-                    borderRadius: "8px",
-                    opacity: b.is_active ? 1 : 0.5,
+                    padding: "16px 20px",
+                    background: cardBg,
+                    border: `1px solid ${b.is_active ? cardBorder : "rgba(245,237,218,0.05)"}`,
+                    borderRadius: "12px",
+                    opacity: b.is_active ? 1 : 0.4,
+                    backdropFilter: "blur(12px)",
                   }}
                 >
                   <div>
@@ -248,28 +274,26 @@ export default function FarmDetailPage() {
                     <div
                       style={{
                         fontSize: "11px",
-                        color: "rgba(245,237,218,0.4)",
-                        marginTop: "2px",
+                        color: "rgba(245,237,218,0.3)",
+                        marginTop: "4px",
                         fontFamily: "var(--font-jetbrains), monospace",
                       }}
                     >
                       {season?.crop || "—"} · {season?.cultivar || "—"}
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    {b.area_hectares && (
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          color: "#F5C842",
-                          fontFamily: "var(--font-jetbrains), monospace",
-                        }}
-                      >
-                        {b.area_hectares.toFixed(1)} ha
-                      </div>
-                    )}
-                  </div>
+                  {b.area_hectares && (
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        color: "#F5C842",
+                        fontFamily: "var(--font-jetbrains), monospace",
+                      }}
+                    >
+                      {b.area_hectares.toFixed(1)} ha
+                    </div>
+                  )}
                 </div>
               );
             })}

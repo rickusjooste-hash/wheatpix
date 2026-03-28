@@ -159,10 +159,11 @@ export default function HistoryPage() {
     return SEVERITY_LEVELS[sev as 1 | 2 | 3 | 4].color;
   };
 
-  const handleDownload = async (group: InspectionGroup) => {
-    setDownloading(group.key);
+  const handleDownload = async (group: InspectionGroup, format: "pdf" | "xlsx") => {
+    setDownloading(group.key + format);
     try {
-      const res = await fetch("/api/reports/generate", {
+      const endpoint = format === "pdf" ? "/api/reports/generate" : "/api/reports/xlsx";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ farmId: group.farmId, stageId: group.stageId, inspectionDate: group.date }),
@@ -172,11 +173,11 @@ export default function HistoryPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Kamp_Inspeksie_${group.farmName}_${group.date}.pdf`;
+      a.download = `Kamp_Inspeksie_${group.farmName}_${group.date}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Kon nie verslag genereer nie");
+      alert("Kon nie aflaai nie");
     }
     setDownloading(null);
   };
@@ -280,20 +281,36 @@ export default function HistoryPage() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleDownload(group); }}
-                      disabled={downloading === group.key}
+                      onClick={(e) => { e.stopPropagation(); handleDownload(group, "xlsx"); }}
+                      disabled={downloading === group.key + "xlsx"}
                       style={{
                         padding: "5px 10px",
                         background: "#fff",
                         border: "1px solid #d4d4d0",
                         borderRadius: "6px",
-                        color: downloading === group.key ? "#bbb" : "#6b6b6b",
+                        color: downloading === group.key + "xlsx" ? "#bbb" : "#6b6b6b",
                         fontSize: "11px",
                         cursor: "pointer",
                         fontWeight: 500,
                       }}
                     >
-                      {downloading === group.key ? "..." : "PDF"}
+                      {downloading === group.key + "xlsx" ? "..." : "XLSX"}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDownload(group, "pdf"); }}
+                      disabled={downloading === group.key + "pdf"}
+                      style={{
+                        padding: "5px 10px",
+                        background: "#fff",
+                        border: "1px solid #d4d4d0",
+                        borderRadius: "6px",
+                        color: downloading === group.key + "pdf" ? "#bbb" : "#6b6b6b",
+                        fontSize: "11px",
+                        cursor: "pointer",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {downloading === group.key + "pdf" ? "..." : "PDF"}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleSend(group); }}

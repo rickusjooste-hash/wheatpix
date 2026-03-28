@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SEVERITY_LEVELS } from "@/lib/inspection-utils";
+import ZoneDisplay from "@/components/dashboard/ZoneDisplay";
 import Link from "next/link";
 
 interface InspectionDetail {
@@ -52,6 +53,7 @@ export default function InspectionDetailPage() {
   const [herbicides, setHerbicides] = useState<HerbicideRecord[]>([]);
   const [photos, setPhotos] = useState<PhotoRecord[]>([]);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [blockGeometry, setBlockGeometry] = useState<{ lat: number; lng: number }[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -68,11 +70,15 @@ export default function InspectionDetailPage() {
 
       // Load related names
       const [{ data: block }, { data: farm }, { data: stage }] = await Promise.all([
-        supabase.from("blocks" as never).select("name").eq("id" as never, inspection.block_id as never).single(),
+        supabase.from("blocks" as never).select("name, geometry").eq("id" as never, inspection.block_id as never).single(),
         supabase.from("farms" as never).select("name").eq("id" as never, inspection.farm_id as never).single(),
         supabase.from("inspection_stages" as never).select("name").eq("id" as never, inspection.stage_id as never).single(),
       ]);
-      if (block) setBlockName((block as { name: string }).name);
+      if (block) {
+        const b = block as unknown as { name: string; geometry: { lat: number; lng: number }[] | null };
+        setBlockName(b.name);
+        setBlockGeometry(b.geometry);
+      }
       if (farm) setFarmName((farm as { name: string }).name);
       if (stage) setStageName((stage as { name: string }).name);
 
@@ -182,13 +188,9 @@ export default function InspectionDetailPage() {
                       {w.notes}
                     </div>
                   )}
-                  {w.zones && w.zones.length > 0 && (
-                    <div style={{ display: "flex", gap: "4px", marginTop: "6px", flexWrap: "wrap" }}>
-                      {w.zones.map((z) => (
-                        <span key={z} style={{ fontSize: "10px", padding: "2px 6px", background: `${s.color}15`, border: `1px solid ${s.color}30`, borderRadius: "4px", color: s.color, fontFamily: "var(--font-jetbrains), monospace" }}>
-                          sone {z + 1}
-                        </span>
-                      ))}
+                  {w.zones && w.zones.length > 0 && blockGeometry && (
+                    <div style={{ marginTop: "8px" }}>
+                      <ZoneDisplay geometry={blockGeometry} zones={w.zones} color={s.color} size={100} />
                     </div>
                   )}
                 </div>
@@ -229,13 +231,9 @@ export default function InspectionDetailPage() {
                       {w.notes}
                     </div>
                   )}
-                  {w.zones && w.zones.length > 0 && (
-                    <div style={{ display: "flex", gap: "4px", marginTop: "6px", flexWrap: "wrap" }}>
-                      {w.zones.map((z) => (
-                        <span key={z} style={{ fontSize: "10px", padding: "2px 6px", background: `${s.color}15`, border: `1px solid ${s.color}30`, borderRadius: "4px", color: s.color, fontFamily: "var(--font-jetbrains), monospace" }}>
-                          sone {z + 1}
-                        </span>
-                      ))}
+                  {w.zones && w.zones.length > 0 && blockGeometry && (
+                    <div style={{ marginTop: "8px" }}>
+                      <ZoneDisplay geometry={blockGeometry} zones={w.zones} color={s.color} size={100} />
                     </div>
                   )}
                 </div>

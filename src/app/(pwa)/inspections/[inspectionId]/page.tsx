@@ -47,6 +47,7 @@ export default function ActiveInspectionPage() {
   const [efficacyData, setEfficacyData] = useState<HerbicideEfficacy[]>([]);
   const [selectedHerbicides, setSelectedHerbicides] = useState<Record<string, Set<string>>>({});
   const [editingNoteWeed, setEditingNoteWeed] = useState<string | null>(null);
+  const [savedBlocks, setSavedBlocks] = useState<Set<string>>(new Set());
   const [showBlockSelector, setShowBlockSelector] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -141,13 +142,14 @@ export default function ActiveInspectionPage() {
   const currentPhotos = photos[selectedBlockId] || [];
   const currentSelectedHerbicides = selectedHerbicides[selectedBlockId] || new Set<string>();
   const hasData = Object.values(currentData).some((v) => v.severity > 0);
+  const isBlockSaved = savedBlocks.has(selectedBlockId);
 
   // Compute herbicide recommendations based on detected weeds
   const detectedWeedIds = Object.entries(currentData)
     .filter(([, entry]) => entry.severity > 0)
     .map(([weedId]) => weedId);
   const recommendations = getRecommendations(detectedWeedIds, efficacyData, allHerbicides, weeds);
-  const completedCount = Object.keys(inspections).length;
+  const completedCount = savedBlocks.size;
 
   const grasses = weeds.filter((w) => w.category === "grass");
   const broadleaf = weeds.filter((w) => w.category === "broadleaf");
@@ -261,7 +263,7 @@ export default function ActiveInspectionPage() {
   );
 
   const handleSave = useCallback(async () => {
-    if (!hasData || !selectedBlockId || !stageId || !farmId || !userId) return;
+    if (!hasData || !selectedBlockId || !stageId || !farmId || !userId || isBlockSaved) return;
 
     const weedEntries = Object.entries(currentData)
       .filter(([, entry]) => entry.severity > 0)
@@ -310,10 +312,22 @@ export default function ActiveInspectionPage() {
       photoBlobs.length > 0 ? photoBlobs : undefined
     );
 
+    // Mark block as saved
+    setSavedBlocks((prev) => new Set([...prev, selectedBlockId]));
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+
+    // Auto-advance to next unsaved block after a short delay
+    setTimeout(() => {
+      setSaved(false);
+      const idx = blocks.findIndex((b) => b.id === selectedBlockId);
+      const nextUnsaved = blocks.find((b, i) => i > idx && !savedBlocks.has(b.id) && b.id !== selectedBlockId);
+      if (nextUnsaved) {
+        setSelectedBlockId(nextUnsaved.id);
+      }
+    }, 1500);
   }, [
     hasData,
+    isBlockSaved,
     selectedBlockId,
     stageId,
     farmId,
@@ -325,6 +339,8 @@ export default function ActiveInspectionPage() {
     recommendations,
     gps.position,
     seasons,
+    blocks,
+    savedBlocks,
     saveInspection,
   ]);
 
@@ -674,30 +690,30 @@ export default function ActiveInspectionPage() {
         </button>
         <button
           onClick={handleSave}
-          disabled={!hasData}
+          disabled={!hasData || isBlockSaved}
           style={{
             flex: 1,
             padding: "14px",
-            background: saved
+            background: saved || isBlockSaved
               ? "#1a3a1a"
               : hasData
               ? "linear-gradient(135deg, #2a6a2a, #3a8a3a)"
               : "#1a1a1a",
             border:
-              saved || hasData
+              saved || isBlockSaved || hasData
                 ? "1px solid #4a9a4a"
                 : "1px solid #222222",
             borderRadius: "10px",
-            color: saved ? "#4a9a4a" : hasData ? "#ffffff" : "#444444",
+            color: saved || isBlockSaved ? "#4a9a4a" : hasData ? "#ffffff" : "#444444",
             fontSize: "15px",
             fontWeight: 700,
-            cursor: hasData ? "pointer" : "default",
+            cursor: hasData && !isBlockSaved ? "pointer" : "default",
             fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
             letterSpacing: "0.5px",
             transition: "all 0.2s ease",
           }}
         >
-          {saved ? "✓ Gestoor" : "Stoor Inspeksie"}
+          {isBlockSaved ? "✓ Gestoor" : saved ? "✓ Gestoor" : "Stoor Kamp"}
         </button>
         <button
           onClick={() => navigateBlock(1)}

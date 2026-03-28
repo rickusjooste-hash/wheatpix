@@ -250,7 +250,7 @@ export default function HistoryPage() {
                 }}
               >
                 {/* Header */}
-                <button
+                <div
                   onClick={() => setExpandedGroup(isExpanded ? null : group.key)}
                   style={{
                     display: "flex",
@@ -258,8 +258,6 @@ export default function HistoryPage() {
                     alignItems: "center",
                     width: "100%",
                     padding: "18px 20px",
-                    background: "transparent",
-                    border: "none",
                     cursor: "pointer",
                     textAlign: "left",
                   }}
@@ -330,7 +328,7 @@ export default function HistoryPage() {
                       ▸
                     </span>
                   </div>
-                </button>
+                </div>
 
                 {/* Spreadsheet table */}
                 {isExpanded && (

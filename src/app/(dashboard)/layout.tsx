@@ -20,8 +20,8 @@ export default async function DashboardLayout({
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(145deg, #0f1a0a 0%, #162210 40%, #0f180d 100%)",
-        color: "#F5EDDA",
+        background: "#f7f7f5",
+        color: "#1a1a1a",
         fontFamily: "var(--font-outfit), 'Outfit', sans-serif",
       }}
     >
@@ -35,10 +35,11 @@ export default async function DashboardLayout({
           marginLeft: "240px",
           minHeight: "100vh",
           padding: "40px 48px",
-          transition: "margin-left 0.2s ease",
         }}
       >
-        {children}
+        <div style={{ maxWidth: "1100px" }}>
+          {children}
+        </div>
       </main>
     </div>
   );

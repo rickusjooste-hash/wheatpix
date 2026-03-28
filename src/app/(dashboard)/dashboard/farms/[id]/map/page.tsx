@@ -120,11 +120,11 @@ export default function FarmMapPage() {
   }, []);
 
   if (loading) {
-    return <div style={{ color: "rgba(245,237,218,0.4)", fontSize: "13px" }}>Laai kaart...</div>;
+    return <div style={{ color: "#999", fontSize: "14px" }}>Laai kaart...</div>;
   }
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 64px)", margin: "-32px -40px" }}>
+    <div style={{ display: "flex", height: "calc(100vh - 80px)", margin: "-40px -48px" }}>
       {/* Map */}
       <div style={{ flex: 1, position: "relative" }}>
         <FarmMap
@@ -142,105 +142,59 @@ export default function FarmMapPage() {
       <div
         style={{
           width: "300px",
-          background: "#0a0f05",
-          borderLeft: "1px solid #1a2e0d",
+          background: "#fff",
+          borderLeft: "1px solid #e8e8e4",
           display: "flex",
           flexDirection: "column",
           overflow: "auto",
         }}
       >
-        {/* Header */}
-        <div style={{ padding: "16px", borderBottom: "1px solid #1a2e0d" }}>
+        <div style={{ padding: "20px", borderBottom: "1px solid #f0f0ec" }}>
           <Link
             href={`/dashboard/farms/${farmId}`}
-            style={{ fontSize: "11px", color: "rgba(245,237,218,0.4)", textDecoration: "none" }}
+            style={{ fontSize: "13px", color: "#999", textDecoration: "none" }}
           >
             ← {farmName}
           </Link>
-          <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#F5EDDA", margin: "8px 0 0" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", margin: "8px 0 0" }}>
             Kaart
           </h2>
         </div>
 
-        {/* Selected block info or block list */}
         {selectedBlock ? (
-          <div style={{ padding: "16px" }}>
+          <div style={{ padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <div style={{ fontSize: "16px", fontWeight: 700, color: "#F5EDDA" }}>
+                <div style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a" }}>
                   {selectedBlock.name}
                 </div>
                 {selectedBlock.area_hectares && (
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#F5C842",
-                      marginTop: "4px",
-                      fontFamily: "var(--font-jetbrains), monospace",
-                    }}
-                  >
+                  <div style={{ fontSize: "14px", color: "#D4890A", marginTop: "4px", fontWeight: 600, fontFamily: "var(--font-jetbrains), monospace" }}>
                     {selectedBlock.area_hectares.toFixed(1)} ha
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => setSelectedBlock(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "rgba(245,237,218,0.4)",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                }}
-              >
+              <button onClick={() => setSelectedBlock(null)} style={{ background: "none", border: "none", color: "#bbb", fontSize: "16px", cursor: "pointer" }}>
                 ✕
               </button>
             </div>
-
             {seasons[selectedBlock.id] && (
-              <div
-                style={{
-                  marginTop: "12px",
-                  padding: "10px",
-                  background: "#111a08",
-                  borderRadius: "8px",
-                  border: "1px solid #1a2e0d",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "10px",
-                    color: "rgba(245,237,218,0.4)",
-                    textTransform: "uppercase",
-                    letterSpacing: "1px",
-                    marginBottom: "4px",
-                    fontFamily: "var(--font-jetbrains), monospace",
-                  }}
-                >
+              <div style={{ marginTop: "14px", padding: "12px", background: "#f7f7f5", borderRadius: "8px" }}>
+                <div style={{ fontSize: "11px", color: "#999", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>
                   Seisoen {new Date().getFullYear()}
                 </div>
-                <div style={{ fontSize: "13px", color: "#F5EDDA" }}>
+                <div style={{ fontSize: "14px", color: "#1a1a1a" }}>
                   {seasons[selectedBlock.id].crop || "—"} · {seasons[selectedBlock.id].cultivar || "—"}
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <div style={{ padding: "16px" }}>
-            <div
-              style={{
-                fontSize: "10px",
-                fontWeight: 700,
-                color: "rgba(245,237,218,0.3)",
-                letterSpacing: "2px",
-                textTransform: "uppercase",
-                marginBottom: "10px",
-                fontFamily: "var(--font-jetbrains), monospace",
-              }}
-            >
+          <div style={{ padding: "20px" }}>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>
               Kampe ({blocks.length})
             </div>
-            {blocks.map((b) => (
+            {blocks.map((b, i) => (
               <button
                 key={b.id}
                 onClick={() => setSelectedBlock(b)}
@@ -249,31 +203,26 @@ export default function FarmMapPage() {
                   justifyContent: "space-between",
                   alignItems: "center",
                   width: "100%",
-                  padding: "10px 12px",
+                  padding: "12px",
                   marginBottom: "4px",
-                  background: "#111a08",
-                  border: "1px solid #1a2e0d",
-                  borderRadius: "8px",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: i < blocks.length - 1 ? "1px solid #f0f0ec" : "none",
+                  borderRadius: 0,
                   cursor: "pointer",
                   textAlign: "left",
                 }}
               >
-                <span style={{ fontSize: "13px", color: "#F5EDDA" }}>{b.name}</span>
+                <span style={{ fontSize: "14px", fontWeight: 500, color: "#1a1a1a" }}>{b.name}</span>
                 {b.area_hectares && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: "rgba(245,237,218,0.4)",
-                      fontFamily: "var(--font-jetbrains), monospace",
-                    }}
-                  >
+                  <span style={{ fontSize: "12px", color: "#999", fontFamily: "var(--font-jetbrains), monospace" }}>
                     {b.area_hectares.toFixed(1)} ha
                   </span>
                 )}
               </button>
             ))}
             {blocks.length === 0 && (
-              <div style={{ fontSize: "12px", color: "rgba(245,237,218,0.3)", textAlign: "center", padding: "20px" }}>
+              <div style={{ fontSize: "13px", color: "#bbb", textAlign: "center", padding: "24px 0" }}>
                 Gebruik die teken-instrument op die kaart om kampe by te voeg.
               </div>
             )}

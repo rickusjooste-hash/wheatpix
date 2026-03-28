@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/clients", label: "Kliënte", agentOnly: true, superOnly: false },
   { href: "/dashboard/farms", label: "Plase", agentOnly: false, superOnly: false },
   { href: "/dashboard/history", label: "Inspeksies", agentOnly: false, superOnly: false },
+  { href: "/dashboard/settings", label: "Instellings", agentOnly: true, superOnly: false },
   { href: "/admin", label: "Admin", agentOnly: false, superOnly: true },
 ];
 

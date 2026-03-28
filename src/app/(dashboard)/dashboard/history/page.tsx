@@ -59,6 +59,7 @@ interface InspectionGroup {
   farmName: string;
   farmId: string;
   stageName: string;
+  stageId: string;
   date: string;
   blocks: BlockRow[];
 }
@@ -68,6 +69,9 @@ export default function HistoryPage() {
   const [groups, setGroups] = useState<InspectionGroup[]>([]);
   const [weedSpecies, setWeedSpecies] = useState<WeedSpecies[]>([]);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [sending, setSending] = useState<string | null>(null);
+  const [sendResult, setSendResult] = useState<{ key: string; msg: string } | null>(null);
   const [activePopover, setActivePopover] = useState<{
     blockId: string;
     weedId: string;
@@ -109,6 +113,7 @@ export default function HistoryPage() {
             farmName: insp.farms?.name || "—",
             farmId: insp.farm_id,
             stageName: insp.inspection_stages?.name || "—",
+            stageId: insp.stage_id,
             date: insp.inspection_date,
             blocks: [],
           });
@@ -152,6 +157,49 @@ export default function HistoryPage() {
   const severityColor = (sev: number) => {
     if (sev === 0) return "#e8e8e4";
     return SEVERITY_LEVELS[sev as 1 | 2 | 3 | 4].color;
+  };
+
+  const handleDownload = async (group: InspectionGroup) => {
+    setDownloading(group.key);
+    try {
+      const res = await fetch("/api/reports/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ farmId: group.farmId, stageId: group.stageId, inspectionDate: group.date }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Kamp_Inspeksie_${group.farmName}_${group.date}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Kon nie verslag genereer nie");
+    }
+    setDownloading(null);
+  };
+
+  const handleSend = async (group: InspectionGroup) => {
+    setSending(group.key);
+    setSendResult(null);
+    try {
+      const res = await fetch("/api/reports/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ farmId: group.farmId, stageId: group.stageId, inspectionDate: group.date }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSendResult({ key: group.key, msg: data.error || "Kon nie stuur nie" });
+      } else {
+        setSendResult({ key: group.key, msg: `Gestuur na ${data.sentTo}` });
+      }
+    } catch {
+      setSendResult({ key: group.key, msg: "Kon nie stuur nie" });
+    }
+    setSending(null);
   };
 
   if (loading) {
@@ -232,7 +280,44 @@ export default function HistoryPage() {
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDownload(group); }}
+                      disabled={downloading === group.key}
+                      style={{
+                        padding: "5px 10px",
+                        background: "#fff",
+                        border: "1px solid #d4d4d0",
+                        borderRadius: "6px",
+                        color: downloading === group.key ? "#bbb" : "#6b6b6b",
+                        fontSize: "11px",
+                        cursor: "pointer",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {downloading === group.key ? "..." : "PDF"}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleSend(group); }}
+                      disabled={sending === group.key}
+                      style={{
+                        padding: "5px 10px",
+                        background: sending === group.key ? "#f0f0ec" : "#1a1a1a",
+                        border: "none",
+                        borderRadius: "6px",
+                        color: sending === group.key ? "#999" : "#fff",
+                        fontSize: "11px",
+                        cursor: "pointer",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {sending === group.key ? "Stuur..." : "Stuur"}
+                    </button>
+                    {sendResult?.key === group.key && (
+                      <span style={{ fontSize: "11px", color: sendResult.msg.startsWith("Gestuur") ? "#4a9a4a" : "#e8413c" }}>
+                        {sendResult.msg}
+                      </span>
+                    )}
                     <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: severityColor(overallMaxSev) }} />
                     <span
                       style={{

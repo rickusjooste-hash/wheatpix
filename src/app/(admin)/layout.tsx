@@ -18,8 +18,8 @@ export default async function AdminLayout({
     <div
       style={{
         minHeight: "100vh",
-        background: "#0E1A07",
-        color: "#F5EDDA",
+        background: "#f7f7f5",
+        color: "#1a1a1a",
         fontFamily: "var(--font-outfit), 'Outfit', sans-serif",
       }}
     >
@@ -29,15 +29,16 @@ export default async function AdminLayout({
           justifyContent: "space-between",
           alignItems: "center",
           padding: "16px 24px",
-          borderBottom: "1px solid #2D5A1B",
+          background: "#fff",
+          borderBottom: "1px solid #e8e8e4",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <Link href="/admin" style={{ textDecoration: "none" }}>
             <span
               style={{
                 fontSize: "20px",
-                color: "#F5EDDA",
+                color: "#1a1a1a",
                 fontFamily: "var(--font-dm-serif), 'DM Serif Display', serif",
               }}
             >
@@ -48,34 +49,28 @@ export default async function AdminLayout({
             style={{
               fontSize: "10px",
               fontWeight: 700,
-              color: "#F5C842",
-              background: "rgba(245,200,66,0.15)",
+              color: "#D4890A",
+              background: "rgba(212,137,10,0.1)",
               padding: "4px 8px",
               borderRadius: "4px",
               letterSpacing: "1px",
               textTransform: "uppercase",
-              fontFamily: "var(--font-jetbrains), 'Space Mono', monospace",
+              fontFamily: "var(--font-jetbrains), monospace",
             }}
           >
             ADMIN
           </span>
         </div>
         <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          <Link
-            href="/admin"
-            style={{ fontSize: "14px", color: "rgba(245,237,218,0.7)", textDecoration: "none" }}
-          >
+          <Link href="/admin" style={{ fontSize: "14px", color: "#1a1a1a", textDecoration: "none", fontWeight: 500 }}>
             Agente
           </Link>
-          <Link
-            href="/dashboard"
-            style={{ fontSize: "14px", color: "rgba(245,237,218,0.5)", textDecoration: "none" }}
-          >
+          <Link href="/dashboard" style={{ fontSize: "14px", color: "#999", textDecoration: "none" }}>
             Dashboard →
           </Link>
         </div>
       </nav>
-      <main style={{ maxWidth: "1000px", margin: "0 auto", padding: "32px 24px" }}>
+      <main style={{ maxWidth: "800px", margin: "0 auto", padding: "40px 24px" }}>
         {children}
       </main>
     </div>

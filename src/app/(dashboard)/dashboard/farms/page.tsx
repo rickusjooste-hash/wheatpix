@@ -42,12 +42,22 @@ export default function FarmsPage() {
   const handleCreate = async () => {
     if (!newName.trim()) return;
     const slug = newName.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { data, error } = await supabase
       .from("farms" as never)
       .insert({ name: newName.trim(), slug, client_id: newClientId || null } as never)
       .select("id, name, client_id")
       .single();
     if (data && !error) {
+      // Add creator as farm owner so RLS allows access
+      await supabase.from("farm_members" as never).insert({
+        farm_id: (data as unknown as Farm).id,
+        user_id: user.id,
+        role: "owner",
+      } as never);
       setFarms((prev) => [...prev, data as unknown as Farm]);
       setNewName("");
       setNewClientId("");

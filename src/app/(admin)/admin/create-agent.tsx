@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 interface Agent {
   id: string;
@@ -11,13 +10,24 @@ interface Agent {
   clientNames: string[];
 }
 
+const inputStyle: React.CSSProperties = {
+  padding: "10px 14px",
+  background: "#fff",
+  border: "1px solid #d4d4d0",
+  borderRadius: "8px",
+  color: "#1a1a1a",
+  fontSize: "14px",
+  outline: "none",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
 export default function CreateAgent({
   existingAgents,
 }: {
   existingAgents: Map<string, string[]>;
 }) {
   const router = useRouter();
-  const supabase = createClient();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -28,7 +38,6 @@ export default function CreateAgent({
   const [creating, setCreating] = useState(false);
   const [success, setSuccess] = useState("");
 
-  // Load agent details
   useEffect(() => {
     async function loadAgents() {
       const res = await fetch("/api/admin/agents");
@@ -69,7 +78,6 @@ export default function CreateAgent({
     setOpen(false);
     router.refresh();
 
-    // Reload agents list
     const agentsRes = await fetch("/api/admin/agents");
     if (agentsRes.ok) {
       const agentsData = await agentsRes.json();
@@ -79,20 +87,18 @@ export default function CreateAgent({
 
   return (
     <div>
-      {/* Create button / form */}
       {!open ? (
         <button
           onClick={() => setOpen(true)}
           style={{
-            padding: "12px 24px",
-            background: "#F5C842",
+            padding: "10px 20px",
+            background: "#1a1a1a",
             border: "none",
-            borderRadius: "10px",
-            color: "#0E1A07",
-            fontSize: "15px",
-            fontWeight: 700,
+            borderRadius: "8px",
+            color: "#fff",
+            fontSize: "13px",
+            fontWeight: 600,
             cursor: "pointer",
-            fontFamily: "var(--font-outfit), 'Outfit', sans-serif",
           }}
         >
           + Nuwe Agent
@@ -100,79 +106,36 @@ export default function CreateAgent({
       ) : (
         <div
           style={{
-            background: "#1A2E0D",
+            background: "#fff",
             borderRadius: "12px",
             padding: "24px",
-            border: "1px solid #2D5A1B",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)",
             marginBottom: "24px",
           }}
         >
-          <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#F5EDDA", marginBottom: "16px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", marginBottom: "16px", marginTop: 0 }}>
             Skep nuwe agent
           </h3>
           <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <input
-              type="text"
-              placeholder="Volle naam"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              style={{
-                padding: "12px 14px",
-                background: "#0E1A07",
-                border: "1px solid #3A2006",
-                borderRadius: "8px",
-                color: "#F5EDDA",
-                fontSize: "14px",
-              }}
-            />
-            <input
-              type="email"
-              placeholder="E-pos"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                padding: "12px 14px",
-                background: "#0E1A07",
-                border: "1px solid #3A2006",
-                borderRadius: "8px",
-                color: "#F5EDDA",
-                fontSize: "14px",
-              }}
-            />
-            <input
-              type="password"
-              placeholder="Wagwoord"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              style={{
-                padding: "12px 14px",
-                background: "#0E1A07",
-                border: "1px solid #3A2006",
-                borderRadius: "8px",
-                color: "#F5EDDA",
-                fontSize: "14px",
-              }}
-            />
+            <input type="text" placeholder="Volle naam" value={fullName} onChange={(e) => setFullName(e.target.value)} required style={inputStyle} />
+            <input type="email" placeholder="E-pos" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
+            <input type="password" placeholder="Wagwoord" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} style={inputStyle} />
 
-            {error && <div style={{ color: "#C0392B", fontSize: "13px" }}>{error}</div>}
+            {error && <div style={{ color: "#e8413c", fontSize: "13px" }}>{error}</div>}
             {success && <div style={{ color: "#4a9a4a", fontSize: "13px" }}>{success}</div>}
 
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
               <button
                 type="submit"
                 disabled={creating}
                 style={{
-                  padding: "12px 24px",
-                  background: "#F5C842",
+                  padding: "10px 20px",
+                  background: "#1a1a1a",
                   border: "none",
                   borderRadius: "8px",
-                  color: "#0E1A07",
-                  fontSize: "14px",
-                  fontWeight: 700,
+                  color: "#fff",
+                  fontSize: "13px",
+                  fontWeight: 600,
                   cursor: creating ? "default" : "pointer",
                 }}
               >
@@ -182,12 +145,12 @@ export default function CreateAgent({
                 type="button"
                 onClick={() => setOpen(false)}
                 style={{
-                  padding: "12px 16px",
-                  background: "none",
-                  border: "1px solid #2D5A1B",
+                  padding: "10px 16px",
+                  background: "#fff",
+                  border: "1px solid #d4d4d0",
                   borderRadius: "8px",
-                  color: "rgba(245,237,218,0.6)",
-                  fontSize: "14px",
+                  color: "#6b6b6b",
+                  fontSize: "13px",
                   cursor: "pointer",
                 }}
               >
@@ -200,64 +163,70 @@ export default function CreateAgent({
 
       {/* Agent list */}
       <div style={{ marginTop: "32px" }}>
-        <h2 style={{ fontSize: "16px", fontWeight: 600, color: "rgba(245,237,218,0.7)", marginBottom: "16px" }}>
+        <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", marginBottom: "16px" }}>
           Agente
         </h2>
         {loading ? (
-          <div style={{ color: "rgba(245,237,218,0.4)", fontSize: "13px" }}>Laai...</div>
+          <div style={{ color: "#999", fontSize: "14px" }}>Laai...</div>
         ) : agents.length === 0 ? (
           <div
             style={{
-              background: "#1A2E0D",
+              background: "#fff",
               borderRadius: "12px",
-              padding: "32px",
-              border: "1px solid #2D5A1B",
+              padding: "40px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
               textAlign: "center",
-              color: "rgba(245,237,218,0.4)",
+              color: "#bbb",
             }}
           >
             Geen agente nog nie
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {agents.map((agent) => (
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "12px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)",
+              overflow: "hidden",
+            }}
+          >
+            {agents.map((agent, i) => (
               <div
                 key={agent.id}
                 style={{
-                  background: "#1A2E0D",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  border: "1px solid #2D5A1B",
+                  padding: "16px 20px",
+                  borderBottom: i < agents.length - 1 ? "1px solid #f0f0ec" : "none",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ fontSize: "16px", fontWeight: 600, color: "#F5EDDA" }}>
-                      {agent.fullName || agent.email}
-                    </div>
-                    <div style={{ fontSize: "13px", color: "rgba(245,237,218,0.5)", marginTop: "2px" }}>
-                      {agent.email}
-                    </div>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#1a1a1a" }}>
+                    {agent.fullName || agent.email}
                   </div>
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      color: "#F5C842",
-                      background: "rgba(245,200,66,0.1)",
-                      padding: "4px 10px",
-                      borderRadius: "6px",
-                      fontWeight: 600,
-                      fontFamily: "var(--font-jetbrains), monospace",
-                    }}
-                  >
-                    {agent.clientNames.length} {agent.clientNames.length === 1 ? "kliënt" : "kliënte"}
+                  <div style={{ fontSize: "12px", color: "#999", marginTop: "2px" }}>
+                    {agent.email}
                   </div>
+                  {agent.clientNames.length > 0 && (
+                    <div style={{ fontSize: "12px", color: "#bbb", marginTop: "4px" }}>
+                      {agent.clientNames.join(", ")}
+                    </div>
+                  )}
                 </div>
-                {agent.clientNames.length > 0 && (
-                  <div style={{ fontSize: "12px", color: "rgba(245,237,218,0.4)", marginTop: "8px" }}>
-                    {agent.clientNames.join(", ")}
-                  </div>
-                )}
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "#D4890A",
+                    background: "rgba(212,137,10,0.08)",
+                    padding: "3px 8px",
+                    borderRadius: "4px",
+                    fontWeight: 600,
+                    fontFamily: "var(--font-jetbrains), monospace",
+                  }}
+                >
+                  {agent.clientNames.length} {agent.clientNames.length === 1 ? "kliënt" : "kliënte"}
+                </span>
               </div>
             ))}
           </div>

@@ -18,8 +18,13 @@ import { SEVERITY_LEVELS, isPointInPolygon } from "./inspection-utils";
 
 interface ReportBranding {
   companyName: string;
+  tagline: string | null;
   logoUrl: string | null;
+  headerImageUrl: string | null;
+  coverImageUrl: string | null;
+  badgeImageUrl: string | null;
   primaryColor: string;
+  secondaryColor: string;
 }
 
 interface ReportWeed {
@@ -78,7 +83,7 @@ const s = StyleSheet.create({
   coverYear: { fontSize: 36, fontWeight: "bold", color: "#1a1a1a", marginTop: 8 },
   coverAgent: { fontSize: 12, color: "#999", marginTop: 12 },
   // Header bar
-  headerBar: { padding: "12 40", marginBottom: 24 },
+  headerBar: { padding: "12 40", marginBottom: 24, position: "relative" as const, overflow: "hidden" as const, flexDirection: "row" as const, alignItems: "center" as const },
   headerText: { fontSize: 16, fontWeight: "bold", color: "#ffffff" },
   // Camp page
   campLabel: { fontSize: 10, color: "#999", marginBottom: 4, textTransform: "uppercase" as const },
@@ -224,39 +229,52 @@ export function InspectionReport({ data }: { data: ReportData }) {
     <Document>
       {/* Cover Page */}
       <Page size="A4" orientation="landscape" style={s.coverPage}>
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 60 }}>
-          {branding.logoUrl && (
-            <Image src={branding.logoUrl} style={{ width: 140, height: 70, objectFit: "contain" as const, marginBottom: 30 }} />
+        <View style={{ flex: 1, flexDirection: "row" as const }}>
+          {/* Left content */}
+          <View style={{ flex: 1, padding: 50, justifyContent: "center" as const }}>
+            {branding.logoUrl && (
+              <Image src={branding.logoUrl} style={{ width: 140, height: 70, objectFit: "contain" as const, marginBottom: 6 }} />
+            )}
+            {branding.tagline && (
+              <Text style={{ fontSize: 8, color: branding.secondaryColor, letterSpacing: 1.5, marginBottom: 30 }}>
+                {branding.tagline.toUpperCase()}
+              </Text>
+            )}
+            <Text style={{ fontSize: 36, fontWeight: "bold", color: branding.primaryColor }}>
+              {data.clientName}
+            </Text>
+            <Text style={{ fontSize: 16, color: branding.primaryColor, marginTop: 6 }}>
+              Kamp inspeksie verslag
+            </Text>
+            <Text style={{ fontSize: 48, fontWeight: "bold", color: "#1a1a1a", marginTop: 4 }}>
+              {data.year}
+            </Text>
+            <Text style={{ fontSize: 12, color: "#666", marginTop: 16, fontStyle: "italic" }}>
+              {data.agentName}
+            </Text>
+          </View>
+          {/* Right decorative image */}
+          {branding.coverImageUrl && (
+            <View style={{ width: "40%" }}>
+              <Image src={branding.coverImageUrl} style={{ width: "100%", height: "100%", objectFit: "cover" as const }} />
+            </View>
           )}
-          <Text style={{ fontSize: 40, fontWeight: "bold", color: "#1a1a1a", textAlign: "center" }}>
-            {data.clientName}
-          </Text>
-          <Text style={{ fontSize: 18, color: branding.primaryColor, marginTop: 10, textAlign: "center" }}>
-            Kamp inspeksie verslag
-          </Text>
-          <Text style={{ fontSize: 52, fontWeight: "bold", color: "#1a1a1a", marginTop: 8, textAlign: "center" }}>
-            {data.year}
-          </Text>
-          <Text style={{ fontSize: 13, color: "#999", marginTop: 6, textAlign: "center" }}>
-            {data.farmName} · {data.stageName}
-          </Text>
-          <Text style={{ fontSize: 14, color: "#666", marginTop: 20, fontStyle: "italic", textAlign: "center" }}>
-            {data.agentName}
-          </Text>
-          <Text style={{ fontSize: 10, color: "#bbb", marginTop: 4, textAlign: "center" }}>
-            {data.branding.companyName}
-          </Text>
         </View>
         <View style={s.footer}>
           <Text style={{ fontSize: 8, color: "#ccc" }}>Powered by WheatPix</Text>
-          {branding.logoUrl && <Image src={branding.logoUrl} style={s.footerLogo} />}
         </View>
       </Page>
 
       {/* Heatmap Summary */}
       <Page size="A4" orientation="landscape" style={s.page}>
         <View style={[s.headerBar, { backgroundColor: branding.primaryColor }]}>
-          <Text style={s.headerText}>Kamp inspeksie {data.year}</Text>
+          {branding.headerImageUrl && (
+            <Image src={branding.headerImageUrl} style={{ position: "absolute" as const, top: 0, left: 0, right: 0, bottom: 0, objectFit: "cover" as const }} />
+          )}
+          {branding.badgeImageUrl && (
+            <Image src={branding.badgeImageUrl} style={{ width: 30, height: 30, objectFit: "contain" as const, position: "absolute" as const, left: 12, top: 3 }} />
+          )}
+          <Text style={[s.headerText, { textAlign: "right" as const, flex: 1 }]}>Kamp inspeksie {data.year}</Text>
         </View>
 
         {/* Category headers */}
@@ -377,7 +395,13 @@ export function InspectionReport({ data }: { data: ReportData }) {
       {/* Closing page */}
       <Page size="A4" orientation="landscape" style={s.page}>
         <View style={[s.headerBar, { backgroundColor: branding.primaryColor }]}>
-          <Text style={s.headerText}>Kamp inspeksie {data.year}</Text>
+          {branding.headerImageUrl && (
+            <Image src={branding.headerImageUrl} style={{ position: "absolute" as const, top: 0, left: 0, right: 0, bottom: 0, objectFit: "cover" as const }} />
+          )}
+          {branding.badgeImageUrl && (
+            <Image src={branding.badgeImageUrl} style={{ width: 30, height: 30, objectFit: "contain" as const, position: "absolute" as const, left: 12, top: 3 }} />
+          )}
+          <Text style={[s.headerText, { textAlign: "right" as const, flex: 1 }]}>Kamp inspeksie {data.year}</Text>
         </View>
         <View style={s.closingCenter}>
           {branding.logoUrl && <Image src={branding.logoUrl} style={s.closingLogo} />}

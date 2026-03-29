@@ -62,14 +62,21 @@ export async function POST(req: NextRequest) {
   }
 
   const stageData = stage as unknown as { name: string };
-  const brandingData = branding as unknown as { company_name: string; logo_path: string | null; primary_color: string } | null;
+  const brandingData = branding as unknown as {
+    company_name: string; tagline: string | null; logo_path: string | null;
+    header_image_path: string | null; cover_image_path: string | null; badge_image_path: string | null;
+    primary_color: string; secondary_color: string;
+  } | null;
   const weeds = (weedSpecies || []) as unknown as { id: string; name: string; abbreviation: string; category: string }[];
 
-  let logoUrl: string | null = null;
-  if (brandingData?.logo_path) {
-    const { data: urlData } = supabase.storage.from("agent-logos").getPublicUrl(brandingData.logo_path);
-    logoUrl = urlData.publicUrl;
-  }
+  const getUrl = (path: string | null | undefined) => {
+    if (!path) return null;
+    return supabase.storage.from("agent-logos").getPublicUrl(path).data.publicUrl;
+  };
+  const logoUrl = getUrl(brandingData?.logo_path);
+  const headerImageUrl = getUrl(brandingData?.header_image_path);
+  const coverImageUrl = getUrl(brandingData?.cover_image_path);
+  const badgeImageUrl = getUrl(brandingData?.badge_image_path);
 
   const grasses = weeds.filter((w) => w.category === "grass");
   const broadleaf = weeds.filter((w) => w.category === "broadleaf");
@@ -139,8 +146,13 @@ export async function POST(req: NextRequest) {
   const reportData: ReportData = {
     branding: {
       companyName: brandingData?.company_name || "WheatPix",
+      tagline: brandingData?.tagline || null,
       logoUrl,
+      headerImageUrl,
+      coverImageUrl,
+      badgeImageUrl,
       primaryColor: brandingData?.primary_color || "#D4890A",
+      secondaryColor: brandingData?.secondary_color || "#666666",
     },
     farmName: farmData?.name || "—",
     clientName: (farmData?.clients as { name: string } | null)?.name || farmData?.name || "—",

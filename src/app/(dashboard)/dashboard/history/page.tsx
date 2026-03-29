@@ -39,7 +39,7 @@ interface InspectionRow {
   created_at: string;
   blocks: { name: string; sort_order: number; geometry: { lat: number; lng: number }[] | null };
   inspection_stages: { name: string };
-  farms: { name: string };
+  farms: { name: string; client_id: string | null; clients: { name: string } | null };
   camp_inspection_weeds: WeedEntry[];
 }
 
@@ -56,6 +56,7 @@ interface BlockRow {
 
 interface InspectionGroup {
   key: string;
+  clientName: string;
   farmName: string;
   farmId: string;
   stageName: string;
@@ -87,7 +88,7 @@ export default function HistoryPage() {
         supabase
           .from("camp_inspections" as never)
           .select(
-            "id, farm_id, block_id, stage_id, inspection_date, crop, cultivar, notes, created_at, blocks(name, sort_order, geometry), inspection_stages(name), farms(name), camp_inspection_weeds(severity, weed_species_id, notes, zones)" as never
+            "id, farm_id, block_id, stage_id, inspection_date, crop, cultivar, notes, created_at, blocks(name, sort_order, geometry), inspection_stages(name), farms(name, client_id, clients(name)), camp_inspection_weeds(severity, weed_species_id, notes, zones)" as never
           )
           .order("created_at" as never, { ascending: false })
           .limit(300),
@@ -110,6 +111,7 @@ export default function HistoryPage() {
         if (!groupMap.has(key)) {
           groupMap.set(key, {
             key,
+            clientName: (insp.farms?.clients as { name: string } | null)?.name || "—",
             farmName: insp.farms?.name || "—",
             farmId: insp.farm_id,
             stageName: insp.inspection_stages?.name || "—",
@@ -232,8 +234,34 @@ export default function HistoryPage() {
           Geen inspeksies gevind nie.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {groups.map((group) => {
+        <div>
+          {/* Group by client */}
+          {(() => {
+            const byClient = new Map<string, InspectionGroup[]>();
+            for (const g of groups) {
+              const client = g.clientName;
+              if (!byClient.has(client)) byClient.set(client, []);
+              byClient.get(client)!.push(g);
+            }
+            return [...byClient.entries()].map(([clientName, clientGroups]) => {
+              // Group by stage within client
+              const byStage = new Map<string, InspectionGroup[]>();
+              for (const g of clientGroups) {
+                if (!byStage.has(g.stageName)) byStage.set(g.stageName, []);
+                byStage.get(g.stageName)!.push(g);
+              }
+              return (
+                <div key={clientName} style={{ marginBottom: "32px" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "16px" }}>
+                    {clientName}
+                  </div>
+                  {[...byStage.entries()].map(([stageName, stageGroups]) => (
+                    <div key={stageName} style={{ marginBottom: "20px" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 600, color: "#D4890A", marginBottom: "8px", paddingLeft: "4px" }}>
+                        {stageName}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {stageGroups.map((group) => {
             const isExpanded = expandedGroup === group.key;
             const overallMaxSev = Math.max(
               0,
@@ -569,7 +597,14 @@ export default function HistoryPage() {
                 )}
               </div>
             );
-          })}
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
     </div>

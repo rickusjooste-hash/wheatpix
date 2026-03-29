@@ -13,6 +13,10 @@ interface Branding {
   badge_image_path: string | null;
   primary_color: string;
   secondary_color: string;
+  agent_name: string | null;
+  agent_phone: string | null;
+  agent_email: string | null;
+  agent_website: string | null;
 }
 
 const EMPTY_BRANDING: Branding = {
@@ -24,6 +28,10 @@ const EMPTY_BRANDING: Branding = {
   badge_image_path: null,
   primary_color: "#D4890A",
   secondary_color: "#666666",
+  agent_name: null,
+  agent_phone: null,
+  agent_email: null,
+  agent_website: null,
 };
 
 type ImageField = "logo_path" | "header_image_path" | "cover_image_path" | "badge_image_path";
@@ -101,6 +109,10 @@ export default function SettingsPage() {
       badge_image_path: branding.badge_image_path,
       primary_color: branding.primary_color,
       secondary_color: branding.secondary_color,
+      agent_name: branding.agent_name?.trim() || null,
+      agent_phone: branding.agent_phone?.trim() || null,
+      agent_email: branding.agent_email?.trim() || null,
+      agent_website: branding.agent_website?.trim() || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -202,6 +214,29 @@ export default function SettingsPage() {
                     <input type="text" value={branding.secondary_color} onChange={(e) => setBranding((prev) => ({ ...prev, secondary_color: e.target.value }))} style={{ ...inputStyle, width: "100px", fontFamily: "var(--font-jetbrains), monospace", fontSize: "12px" }} />
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Agent Details */}
+          <div style={{ background: "#fff", borderRadius: "12px", padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)" }}>
+            <h2 style={{ fontSize: "14px", fontWeight: 600, color: "#1a1a1a", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "1px" }}>Agent Besonderhede</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", color: "#6b6b6b", marginBottom: "6px", fontWeight: 500 }}>Volle Naam</label>
+                <input type="text" value={branding.agent_name || ""} onChange={(e) => setBranding((prev) => ({ ...prev, agent_name: e.target.value }))} placeholder="bv. Marius Carstens" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", color: "#6b6b6b", marginBottom: "6px", fontWeight: 500 }}>Telefoon</label>
+                <input type="tel" value={branding.agent_phone || ""} onChange={(e) => setBranding((prev) => ({ ...prev, agent_phone: e.target.value }))} placeholder="bv. 082 123 4567" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", color: "#6b6b6b", marginBottom: "6px", fontWeight: 500 }}>E-pos</label>
+                <input type="email" value={branding.agent_email || ""} onChange={(e) => setBranding((prev) => ({ ...prev, agent_email: e.target.value }))} placeholder="bv. marius@nexusag.net" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", color: "#6b6b6b", marginBottom: "6px", fontWeight: 500 }}>Webwerf</label>
+                <input type="url" value={branding.agent_website || ""} onChange={(e) => setBranding((prev) => ({ ...prev, agent_website: e.target.value }))} placeholder="bv. www.nexusag.net" style={inputStyle} />
               </div>
             </div>
           </div>

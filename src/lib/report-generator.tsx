@@ -330,7 +330,13 @@ export function InspectionReport({ data }: { data: ReportData }) {
       {blocks.map((block, i) => (
         <Page key={i} size="A4" orientation="landscape" style={s.page}>
           <View style={[s.headerBar, { backgroundColor: branding.primaryColor }]}>
-            <Text style={s.headerText}>Kamp inspeksie {data.year}</Text>
+            {branding.headerImageUrl && (
+              <Image src={branding.headerImageUrl} style={{ position: "absolute" as const, top: 0, left: 0, right: 0, bottom: 0, objectFit: "cover" as const }} />
+            )}
+            {branding.badgeImageUrl && (
+              <Image src={branding.badgeImageUrl} style={{ width: 30, height: 30, objectFit: "contain" as const, position: "absolute" as const, left: 12, top: 3 }} />
+            )}
+            <Text style={[s.headerText, { textAlign: "right" as const, flex: 1 }]}>Kamp inspeksie {data.year}</Text>
           </View>
 
           <View style={{ flexDirection: "row", gap: 24 }}>

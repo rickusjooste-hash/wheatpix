@@ -5,4 +5,8 @@ alter table public.agent_branding
   add column secondary_color text default '#666666',
   add column header_image_path text,          -- banner strip image for inner pages
   add column cover_image_path text,           -- decorative image for cover page
-  add column badge_image_path text;           -- corner badge (e.g., anniversary graphic)
+  add column badge_image_path text,           -- corner badge (e.g., anniversary graphic)
+  add column agent_name text,                 -- full name
+  add column agent_phone text,
+  add column agent_email text,
+  add column agent_website text;

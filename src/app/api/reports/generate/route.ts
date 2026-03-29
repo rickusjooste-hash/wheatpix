@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     company_name: string; tagline: string | null; logo_path: string | null;
     header_image_path: string | null; cover_image_path: string | null; badge_image_path: string | null;
     primary_color: string; secondary_color: string;
+    agent_name: string | null;
   } | null;
   const weeds = (weedSpecies || []) as unknown as { id: string; name: string; abbreviation: string; category: string; sort_order: number }[];
 
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest) {
     clientName: (farmData?.clients as { name: string } | null)?.name || farmData?.name || "—",
     stageName: stageData?.name || "—",
     inspectionDate,
-    agentName: (user.user_metadata?.full_name as string) || user.email || "—",
+    agentName: brandingData?.agent_name || (user.user_metadata?.full_name as string) || user.email || "—",
     year: new Date(inspectionDate).getFullYear(),
     blocks,
     heatmap: {

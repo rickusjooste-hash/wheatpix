@@ -2,7 +2,7 @@
 
 export const SEVERITY_LEVELS = [
   { level: 0, label: "", name: "Niks", color: "#2a2a2a", bg: "#1a1a1a", border: "#333333" },
-  { level: 1, label: "−", name: "Baie Min", color: "#5a8a5a", bg: "#1a2a1a", border: "#3a5a3a" },
+  { level: 1, label: "-", name: "Baie Min", color: "#5a8a5a", bg: "#1a2a1a", border: "#3a5a3a" },
   { level: 2, label: "X", name: "Min", color: "#d4a017", bg: "#2c2510", border: "#6b5210" },
   { level: 3, label: "XX", name: "Redelik", color: "#e87b35", bg: "#2c1a0e", border: "#7a3d15" },
   { level: 4, label: "XXX", name: "Baie", color: "#e8413c", bg: "#2c0e0e", border: "#7a1515" },

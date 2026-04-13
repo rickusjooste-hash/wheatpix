@@ -150,8 +150,8 @@ export async function POST(req: NextRequest) {
     blocks,
     heatmap: {
       rows: heatmapRows,
-      grasses: grasses.map((w) => ({ id: w.id, abbreviation: w.abbreviation })),
-      broadleaf: broadleaf.map((w) => ({ id: w.id, abbreviation: w.abbreviation })),
+      grasses: grasses.map((w) => ({ id: w.id, name: w.name, abbreviation: w.abbreviation })),
+      broadleaf: broadleaf.map((w) => ({ id: w.id, name: w.name, abbreviation: w.abbreviation })),
     },
   };
 

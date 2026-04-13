@@ -65,8 +65,8 @@ export interface ReportData {
   blocks: ReportBlock[];
   heatmap: {
     rows: ReportHeatmapRow[];
-    grasses: { id: string; abbreviation: string }[];
-    broadleaf: { id: string; abbreviation: string }[];
+    grasses: { id: string; name: string; abbreviation: string }[];
+    broadleaf: { id: string; name: string; abbreviation: string }[];
   };
 }
 
@@ -319,6 +319,33 @@ export function InspectionReport({ data }: { data: ReportData }) {
             })}
           </View>
         ))}
+
+        {/* Legends */}
+        <View style={{ flexDirection: "row", marginTop: 16, gap: 24 }}>
+          {/* Weed legend */}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 7, fontWeight: "bold", color: "#999", marginBottom: 4, textTransform: "uppercase" as const }}>Onkruid Sleutel</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+              {allHeatmapWeeds.map((w) => (
+                <Text key={w.id} style={{ fontSize: 6, color: "#555" }}>
+                  <Text style={{ fontWeight: "bold" }}>{w.abbreviation}</Text> = {w.name}
+                </Text>
+              ))}
+            </View>
+          </View>
+          {/* Severity legend */}
+          <View>
+            <Text style={{ fontSize: 7, fontWeight: "bold", color: "#999", marginBottom: 4, textTransform: "uppercase" as const }}>Graad Sleutel</Text>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {SEVERITY_LEVELS.filter((sl) => sl.level > 0).map((sl) => (
+                <View key={sl.level} style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                  <Text style={{ fontSize: 7, fontWeight: "bold", color: sl.color }}>{sl.label}</Text>
+                  <Text style={{ fontSize: 6, color: "#555" }}>{sl.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
 
         <View style={s.footer}>
           <Text style={s.footerText}>{data.farmName} · {data.stageName} · {data.inspectionDate}</Text>

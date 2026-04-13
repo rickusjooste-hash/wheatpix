@@ -410,9 +410,9 @@ export function InspectionReport({ data }: { data: ReportData }) {
 
             {/* Right: photos */}
             {block.photoUrls.length > 0 && (
-              <View style={{ width: 300 }}>
+              <View style={{ width: 300, flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {block.photoUrls.map((url, pi) => (
-                  <Image key={pi} src={url} style={[s.photo, pi > 0 ? { marginTop: 8 } : {}]} />
+                  <Image key={pi} src={url} style={{ width: block.photoUrls.length === 1 ? 300 : 146, maxHeight: block.photoUrls.length === 1 ? 280 : 200, objectFit: "contain" as const, borderRadius: 4 }} />
                 ))}
               </View>
             )}

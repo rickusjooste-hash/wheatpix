@@ -46,12 +46,16 @@ export default function FarmsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const payload = { name: newName.trim(), slug, client_id: newClientId || null };
+    console.log("Creating farm:", payload);
     const { data, error } = await supabase
       .from("farms" as never)
-      .insert({ name: newName.trim(), slug, client_id: newClientId || null } as never)
+      .insert(payload as never)
       .select("id, name, client_id")
       .single();
-    if (data && !error) {
+    console.log("Farm insert result:", { data, error });
+    if (error) { alert("Kon nie plaas skep nie: " + error.message); return; }
+    if (data) {
       // Add creator as farm owner so RLS allows access
       await supabase.from("farm_members" as never).insert({
         farm_id: (data as unknown as Farm).id,

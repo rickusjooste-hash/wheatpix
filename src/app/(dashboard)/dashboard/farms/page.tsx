@@ -43,30 +43,17 @@ export default function FarmsPage() {
     if (!newName.trim()) return;
     const slug = newName.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const payload = { name: newName.trim(), slug, client_id: newClientId || null };
-    console.log("Creating farm:", payload);
-    const { data, error } = await supabase
-      .from("farms" as never)
-      .insert(payload as never)
-      .select("id, name, client_id")
-      .single();
-    console.log("Farm insert result:", { data, error });
-    if (error) { alert("Kon nie plaas skep nie: " + error.message); return; }
-    if (data) {
-      // Add creator as farm owner so RLS allows access
-      await supabase.from("farm_members" as never).insert({
-        farm_id: (data as unknown as Farm).id,
-        user_id: user.id,
-        role: "owner",
-      } as never);
-      setFarms((prev) => [...prev, data as unknown as Farm]);
-      setNewName("");
-      setNewClientId("");
-      setShowCreate(false);
-    }
+    const res = await fetch("/api/farms/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName.trim(), slug, clientId: newClientId || null }),
+    });
+    const result = await res.json();
+    if (!res.ok) { alert("Kon nie plaas skep nie: " + (result.error || "Onbekende fout")); return; }
+    setFarms((prev) => [...prev, result.farm as Farm]);
+    setNewName("");
+    setNewClientId("");
+    setShowCreate(false);
   };
 
   if (loading) {

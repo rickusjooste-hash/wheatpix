@@ -30,6 +30,8 @@ interface WeedRecord {
 
 interface HerbicideRecord {
   is_auto_suggested: boolean;
+  rate: number | null;
+  unit: string | null;
   herbicides: { name: string; active_ingredients: string[]; group_code: string | null };
 }
 
@@ -93,7 +95,7 @@ export default function InspectionDetailPage() {
       // Load herbicides
       const { data: herbData } = await supabase
         .from("camp_inspection_herbicides" as never)
-        .select("is_auto_suggested, herbicides(name, active_ingredients, group_code)" as never)
+        .select("is_auto_suggested, rate, unit, herbicides(name, active_ingredients, group_code)" as never)
         .eq("inspection_id" as never, inspectionId as never);
       if (herbData) setHerbicides(herbData as unknown as HerbicideRecord[]);
 
@@ -265,6 +267,11 @@ export default function InspectionDetailPage() {
                     {h.herbicides?.group_code && (
                       <span style={{ fontSize: "10px", padding: "2px 6px", background: "#f0f0ec", borderRadius: "4px", color: "#6b6b6b", fontFamily: "var(--font-jetbrains), monospace" }}>
                         Groep {h.herbicides.group_code}
+                      </span>
+                    )}
+                    {h.rate != null && (
+                      <span style={{ fontSize: "10px", padding: "2px 6px", background: "#f0f0ec", borderRadius: "4px", color: "#6b6b6b", fontFamily: "var(--font-jetbrains), monospace" }}>
+                        {h.rate} {h.unit || "L/ha"}
                       </span>
                     )}
                     {h.is_auto_suggested && (

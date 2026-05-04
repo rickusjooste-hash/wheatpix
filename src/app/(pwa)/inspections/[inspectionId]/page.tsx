@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useGeoLocation } from "@/hooks/useGeoLocation";
@@ -56,6 +56,7 @@ export default function ActiveInspectionPage() {
   const [saved, setSaved] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const savingRef = useRef(false);
 
   const gps = useGeoLocation(blocks);
   const { onlineStatus, pendingCount, saveInspection } = useOfflineSync();
@@ -330,61 +331,67 @@ export default function ActiveInspectionPage() {
   );
 
   const handleSave = useCallback(async () => {
+    if (savingRef.current) return;
     if (!hasData || !selectedBlockId || !stageId || !farmId || !userId || isBlockSaved) return;
+    savingRef.current = true;
 
-    const weedEntries = Object.entries(currentData)
-      .filter(([, entry]) => entry.severity > 0)
-      .map(([weedId, entry]) => ({
-        weed_species_id: weedId,
-        severity: entry.severity,
-        notes: entry.notes || null,
-        zones: entry.zones && entry.zones.length > 0 ? entry.zones : null,
+    try {
+      const weedEntries = Object.entries(currentData)
+        .filter(([, entry]) => entry.severity > 0)
+        .map(([weedId, entry]) => ({
+          weed_species_id: weedId,
+          severity: entry.severity,
+          notes: entry.notes || null,
+          zones: entry.zones && entry.zones.length > 0 ? entry.zones : null,
+        }));
+
+      const photoMetas = currentPhotos.map((p, i) => ({
+        id: p.id,
+        caption: p.caption,
+        sort_order: i,
       }));
 
-    const photoMetas = currentPhotos.map((p, i) => ({
-      id: p.id,
-      caption: p.caption,
-      sort_order: i,
-    }));
+      const photoBlobs = currentPhotos.map((p) => ({
+        id: p.id,
+        blob: p.blob,
+      }));
 
-    const photoBlobs = currentPhotos.map((p) => ({
-      id: p.id,
-      blob: p.blob,
-    }));
+      // Build herbicide selections with auto-suggested flag
+      const autoSuggestedIds = new Set(recommendations.map((r) => r.herbicide.id));
+      const herbicideEntries: SelectedHerbicide[] = [...currentSelectedHerbicides].map((id) => ({
+        herbicide_id: id,
+        is_auto_suggested: autoSuggestedIds.has(id),
+        rate: currentRates[id] ?? null,
+        unit: currentUnits[id] ?? null,
+      }));
 
-    // Build herbicide selections with auto-suggested flag
-    const autoSuggestedIds = new Set(recommendations.map((r) => r.herbicide.id));
-    const herbicideEntries: SelectedHerbicide[] = [...currentSelectedHerbicides].map((id) => ({
-      herbicide_id: id,
-      is_auto_suggested: autoSuggestedIds.has(id),
-      rate: currentRates[id] ?? null,
-      unit: currentUnits[id] ?? null,
-    }));
+      await saveInspection(
+        {
+          id: crypto.randomUUID(),
+          farm_id: farmId,
+          block_id: selectedBlockId,
+          stage_id: stageId,
+          inspector_id: userId,
+          inspection_date: new Date().toISOString().split("T")[0],
+          gps_lat: gps.position?.lat ?? null,
+          gps_lng: gps.position?.lng ?? null,
+          crop: seasons[selectedBlockId]?.crop ?? null,
+          cultivar: seasons[selectedBlockId]?.cultivar ?? null,
+          notes: currentNotes || null,
+          weeds: weedEntries,
+          photos: photoMetas,
+          herbicides: herbicideEntries,
+        },
+        photoBlobs.length > 0 ? photoBlobs : undefined
+      );
 
-    await saveInspection(
-      {
-        id: crypto.randomUUID(),
-        farm_id: farmId,
-        block_id: selectedBlockId,
-        stage_id: stageId,
-        inspector_id: userId,
-        inspection_date: new Date().toISOString().split("T")[0],
-        gps_lat: gps.position?.lat ?? null,
-        gps_lng: gps.position?.lng ?? null,
-        crop: seasons[selectedBlockId]?.crop ?? null,
-        cultivar: seasons[selectedBlockId]?.cultivar ?? null,
-        notes: currentNotes || null,
-        weeds: weedEntries,
-        photos: photoMetas,
-        herbicides: herbicideEntries,
-      },
-      photoBlobs.length > 0 ? photoBlobs : undefined
-    );
-
-    // Mark block as saved — stay on this camp, GPS will switch when agent moves
-    setSavedBlocks((prev) => new Set([...prev, selectedBlockId]));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+      // Mark block as saved — stay on this camp, GPS will switch when agent moves
+      setSavedBlocks((prev) => new Set([...prev, selectedBlockId]));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      savingRef.current = false;
+    }
   }, [
     hasData,
     isBlockSaved,

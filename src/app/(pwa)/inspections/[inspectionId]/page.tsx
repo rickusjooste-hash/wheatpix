@@ -47,6 +47,8 @@ export default function ActiveInspectionPage() {
   const [allHerbicides, setAllHerbicides] = useState<Herbicide[]>([]);
   const [efficacyData, setEfficacyData] = useState<HerbicideEfficacy[]>([]);
   const [selectedHerbicides, setSelectedHerbicides] = useState<Record<string, Set<string>>>({});
+  const [herbicideRates, setHerbicideRates] = useState<Record<string, Record<string, number | null>>>({});
+  const [herbicideUnits, setHerbicideUnits] = useState<Record<string, Record<string, string | null>>>({});
   const [editingNoteWeed, setEditingNoteWeed] = useState<string | null>(null);
   const [savedBlocks, setSavedBlocks] = useState<Set<string>>(new Set());
   const [showBlockSelector, setShowBlockSelector] = useState(false);
@@ -143,6 +145,8 @@ export default function ActiveInspectionPage() {
   const currentNotes = notes[selectedBlockId] || "";
   const currentPhotos = photos[selectedBlockId] || [];
   const currentSelectedHerbicides = selectedHerbicides[selectedBlockId] || new Set<string>();
+  const currentRates = herbicideRates[selectedBlockId] || {};
+  const currentUnits = herbicideUnits[selectedBlockId] || {};
   const hasData = Object.values(currentData).some((v) => v.severity > 0);
   const isBlockSaved = savedBlocks.has(selectedBlockId);
   const allBlocksSaved = savedBlocks.size >= blocks.length && blocks.length > 0;
@@ -257,13 +261,38 @@ export default function ActiveInspectionPage() {
         const current = new Set(prev[selectedBlockId] || []);
         if (current.has(herbicideId)) {
           current.delete(herbicideId);
+          setHerbicideRates((rp) => {
+            const blockRates = { ...rp[selectedBlockId] };
+            delete blockRates[herbicideId];
+            return { ...rp, [selectedBlockId]: blockRates };
+          });
+          setHerbicideUnits((up) => {
+            const blockUnits = { ...up[selectedBlockId] };
+            delete blockUnits[herbicideId];
+            return { ...up, [selectedBlockId]: blockUnits };
+          });
         } else {
           current.add(herbicideId);
+          const herb = allHerbicides.find((h) => h.id === herbicideId);
+          if (herb) {
+            if (herb.default_rate != null) {
+              setHerbicideRates((rp) => ({
+                ...rp,
+                [selectedBlockId]: { ...rp[selectedBlockId], [herbicideId]: herb.default_rate },
+              }));
+            }
+            if (herb.default_unit) {
+              setHerbicideUnits((up) => ({
+                ...up,
+                [selectedBlockId]: { ...up[selectedBlockId], [herbicideId]: herb.default_unit },
+              }));
+            }
+          }
         }
         return { ...prev, [selectedBlockId]: current };
       });
     },
-    [selectedBlockId]
+    [selectedBlockId, allHerbicides]
   );
 
   const handleHerbicideAdd = useCallback(
@@ -274,6 +303,28 @@ export default function ActiveInspectionPage() {
         current.add(herbicideId);
         return { ...prev, [selectedBlockId]: current };
       });
+    },
+    [selectedBlockId]
+  );
+
+  const handleRateChange = useCallback(
+    (herbicideId: string, rate: number | null) => {
+      markBlockDirty();
+      setHerbicideRates((prev) => ({
+        ...prev,
+        [selectedBlockId]: { ...prev[selectedBlockId], [herbicideId]: rate },
+      }));
+    },
+    [selectedBlockId]
+  );
+
+  const handleUnitChange = useCallback(
+    (herbicideId: string, unit: string | null) => {
+      markBlockDirty();
+      setHerbicideUnits((prev) => ({
+        ...prev,
+        [selectedBlockId]: { ...prev[selectedBlockId], [herbicideId]: unit },
+      }));
     },
     [selectedBlockId]
   );
@@ -306,6 +357,8 @@ export default function ActiveInspectionPage() {
     const herbicideEntries: SelectedHerbicide[] = [...currentSelectedHerbicides].map((id) => ({
       herbicide_id: id,
       is_auto_suggested: autoSuggestedIds.has(id),
+      rate: currentRates[id] ?? null,
+      unit: currentUnits[id] ?? null,
     }));
 
     await saveInspection(
@@ -678,8 +731,11 @@ export default function ActiveInspectionPage() {
           recommendations={recommendations}
           allHerbicides={allHerbicides}
           selectedIds={currentSelectedHerbicides}
+          rates={currentRates}
+          units={currentUnits}
           onToggle={handleHerbicideToggle}
-          onAdd={handleHerbicideAdd}
+          onRateChange={handleRateChange}
+          onUnitChange={handleUnitChange}
         />
       </div>
 

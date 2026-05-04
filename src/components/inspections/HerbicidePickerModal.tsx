@@ -18,14 +18,16 @@ export default function HerbicidePickerModal({
 }: HerbicidePickerModalProps) {
   const [search, setSearch] = useState("");
 
-  const filtered = herbicides.filter((h) => {
-    if (selectedIds.has(h.id)) return false;
-    const q = search.toLowerCase();
-    return (
-      h.name.toLowerCase().includes(q) ||
-      h.active_ingredients.some((a) => a.toLowerCase().includes(q))
-    );
-  });
+  const filtered = herbicides
+    .filter((h) => {
+      if (selectedIds.has(h.id)) return false;
+      const q = search.toLowerCase();
+      return (
+        h.name.toLowerCase().includes(q) ||
+        h.active_ingredients.some((a) => a.toLowerCase().includes(q))
+      );
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div

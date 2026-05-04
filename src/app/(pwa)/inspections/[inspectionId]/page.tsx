@@ -116,7 +116,7 @@ export default function ActiveInspectionPage() {
       const { data: herbData } = await supabase
         .from("herbicides" as never)
         .select("*")
-        .eq("is_active" as never, true as never);
+        .order("name" as never);
       if (herbData) setAllHerbicides(herbData as unknown as Herbicide[]);
 
       const { data: effData } = await supabase

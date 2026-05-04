@@ -16,7 +16,7 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  const redirectParam = searchParams.get("redirectTo");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,7 +40,8 @@ function LoginForm() {
       return;
     }
 
-    router.push(redirectTo);
+    const isPwa = window.matchMedia("(display-mode: standalone)").matches;
+    router.push(redirectParam || (isPwa ? "/app" : "/dashboard"));
     router.refresh();
   };
 

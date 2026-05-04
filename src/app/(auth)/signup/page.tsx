@@ -34,7 +34,8 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/dashboard");
+    const isPwa = window.matchMedia("(display-mode: standalone)").matches;
+    router.push(isPwa ? "/app" : "/dashboard");
     router.refresh();
   };
 

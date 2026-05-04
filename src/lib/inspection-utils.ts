@@ -92,6 +92,9 @@ export interface Herbicide {
   active_ingredients: string[];
   group_code: string | null;
   category: "broadleaf" | "grass" | "both";
+  is_active: boolean;
+  default_rate: number | null;
+  default_unit: string | null;
 }
 
 export interface HerbicideEfficacy {
@@ -109,6 +112,8 @@ export interface HerbicideRecommendation {
 export interface SelectedHerbicide {
   herbicide_id: string;
   is_auto_suggested: boolean;
+  rate: number | null;
+  unit: string | null;
 }
 
 /** Point-in-polygon check using ray casting */

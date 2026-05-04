@@ -126,14 +126,13 @@ async function removePhotoBlobs(inspectionId: string): Promise<void> {
 }
 
 export function useOfflineSync() {
-  const [onlineStatus, setOnlineStatus] = useState<OnlineStatus>(
-    typeof navigator !== "undefined" && navigator.onLine ? "online" : "offline"
-  );
+  const [onlineStatus, setOnlineStatus] = useState<OnlineStatus>("offline");
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const syncingRef = useRef(false);
 
   useEffect(() => {
+    setOnlineStatus(navigator.onLine ? "online" : "offline");
     const handleOnline = () => setOnlineStatus("online");
     const handleOffline = () => setOnlineStatus("offline");
     window.addEventListener("online", handleOnline);
@@ -245,6 +244,8 @@ export function useOfflineSync() {
             inspection_id: inspectionId,
             herbicide_id: h.herbicide_id,
             is_auto_suggested: h.is_auto_suggested,
+            rate: h.rate,
+            unit: h.unit,
           }));
 
           const { error: herbError } = await supabase

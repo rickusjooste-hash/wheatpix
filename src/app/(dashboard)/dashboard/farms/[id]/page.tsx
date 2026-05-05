@@ -58,12 +58,17 @@ export default function FarmDetailPage() {
       setEditing(false);
       return;
     }
-    const { error } = await supabase.from("farms" as never).update({ name: trimmed } as never).eq("id" as never, farmId as never);
-    if (error) {
-      alert("Kon nie hernoem nie: " + error.message);
+    const { data, error } = await supabase
+      .from("farms" as never)
+      .update({ name: trimmed } as never)
+      .eq("id" as never, farmId as never)
+      .select("id, name, client_id")
+      .single();
+    if (error || !data) {
+      alert("Kon nie hernoem nie: " + (error?.message || "Geen toegang"));
       return;
     }
-    setFarm({ ...farm, name: trimmed });
+    setFarm(data as unknown as Farm);
     setEditing(false);
   }
 

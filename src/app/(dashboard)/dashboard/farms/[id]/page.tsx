@@ -58,7 +58,11 @@ export default function FarmDetailPage() {
       setEditing(false);
       return;
     }
-    await supabase.from("farms" as never).update({ name: trimmed } as never).eq("id" as never, farmId as never);
+    const { error } = await supabase.from("farms" as never).update({ name: trimmed } as never).eq("id" as never, farmId as never);
+    if (error) {
+      alert("Kon nie hernoem nie: " + error.message);
+      return;
+    }
     setFarm({ ...farm, name: trimmed });
     setEditing(false);
   }

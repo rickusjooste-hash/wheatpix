@@ -35,6 +35,9 @@ export default function ClientDetailPage() {
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showNewFarm, setShowNewFarm] = useState(false);
+  const [newFarmName, setNewFarmName] = useState("");
+  const [creatingFarm, setCreatingFarm] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -106,6 +109,25 @@ export default function ClientDetailPage() {
 
     setUnassignedFarms((prev) => [...prev, ...assignedFarms.filter((f) => f.id === farmId)]);
     setAssignedFarms((prev) => prev.filter((f) => f.id !== farmId));
+  };
+
+  const createFarm = async () => {
+    const name = newFarmName.trim();
+    if (!name || creatingFarm) return;
+    setCreatingFarm(true);
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const res = await fetch("/api/farms/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, slug, clientId }),
+    });
+    const { farm } = await res.json();
+    if (farm) {
+      setAssignedFarms((prev) => [...prev, farm as Farm].sort((a, b) => a.name.localeCompare(b.name)));
+    }
+    setNewFarmName("");
+    setShowNewFarm(false);
+    setCreatingFarm(false);
   };
 
   if (loading) {
@@ -186,9 +208,48 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Assigned farms */}
-      <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#0E1A07", marginBottom: "12px" }}>
-        Plase ({assignedFarms.length})
-      </h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+        <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#0E1A07", margin: 0 }}>
+          Plase ({assignedFarms.length})
+        </h2>
+        {!showNewFarm && (
+          <button
+            onClick={() => setShowNewFarm(true)}
+            style={{ padding: "6px 14px", background: "#2D5A1B", border: "none", borderRadius: "6px", color: "#F5EDDA", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+          >
+            + Nuwe Plaas
+          </button>
+        )}
+      </div>
+      {showNewFarm && (
+        <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+          <input
+            autoFocus
+            type="text"
+            value={newFarmName}
+            onChange={(e) => setNewFarmName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") createFarm();
+              if (e.key === "Escape") { setShowNewFarm(false); setNewFarmName(""); }
+            }}
+            placeholder="Plaas naam"
+            style={{ flex: 1, padding: "10px 14px", border: "1px solid #E2DED6", borderRadius: "8px", fontSize: "14px", color: "#0E1A07" }}
+          />
+          <button
+            onClick={createFarm}
+            disabled={creatingFarm || !newFarmName.trim()}
+            style={{ padding: "8px 16px", background: "#2D5A1B", border: "none", borderRadius: "8px", color: "#F5EDDA", fontWeight: 600, cursor: "pointer", opacity: creatingFarm || !newFarmName.trim() ? 0.5 : 1 }}
+          >
+            {creatingFarm ? "Skep..." : "Skep"}
+          </button>
+          <button
+            onClick={() => { setShowNewFarm(false); setNewFarmName(""); }}
+            style={{ padding: "8px 16px", background: "none", border: "1px solid #E2DED6", borderRadius: "8px", color: "#5C554B", cursor: "pointer" }}
+          >
+            Kanselleer
+          </button>
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
         {assignedFarms.map((f) => (
           <div

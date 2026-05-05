@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 interface ClientDetail {
@@ -202,7 +203,7 @@ export default function ClientDetailPage() {
               alignItems: "center",
             }}
           >
-            <span style={{ fontSize: "15px", fontWeight: 500, color: "#0E1A07" }}>{f.name}</span>
+            <Link href={`/dashboard/farms/${f.id}`} style={{ fontSize: "15px", fontWeight: 500, color: "#0E1A07", textDecoration: "none" }}>{f.name}</Link>
             <button
               onClick={() => unassignFarm(f.id)}
               style={{

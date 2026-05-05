@@ -58,17 +58,17 @@ export default function FarmDetailPage() {
       setEditing(false);
       return;
     }
-    const { data, error } = await supabase
-      .from("farms" as never)
-      .update({ name: trimmed } as never)
-      .eq("id" as never, farmId as never)
-      .select("id, name, client_id")
-      .single();
-    if (error || !data) {
-      alert("Kon nie hernoem nie: " + (error?.message || "Geen toegang"));
+    const res = await fetch("/api/farms/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ farmId, name: trimmed }),
+    });
+    const result = await res.json();
+    if (!res.ok || !result.farm) {
+      alert("Kon nie hernoem nie: " + (result.error || "Onbekende fout"));
       return;
     }
-    setFarm(data as unknown as Farm);
+    setFarm(result.farm as Farm);
     setEditing(false);
   }
 

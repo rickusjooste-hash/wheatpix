@@ -124,20 +124,37 @@ export default function FarmDetailPage() {
           )}
           {client && <p style={{ fontSize: "14px", color: "#999", margin: "4px 0 0" }}>{client.name}</p>}
         </div>
-        <Link
-          href={`/dashboard/farms/${farmId}/map`}
-          style={{
-            padding: "10px 20px",
-            background: "#1a1a1a",
-            borderRadius: "8px",
-            color: "#fff",
-            fontSize: "13px",
-            fontWeight: 600,
-            textDecoration: "none",
-          }}
-        >
-          Kaart & Kampe
-        </Link>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Link
+            href={`/dashboard/farms/${farmId}/seasons`}
+            style={{
+              padding: "10px 20px",
+              background: "#fff",
+              border: "1px solid #ddd",
+              borderRadius: "8px",
+              color: "#1a1a1a",
+              fontSize: "13px",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            Seisoene
+          </Link>
+          <Link
+            href={`/dashboard/farms/${farmId}/map`}
+            style={{
+              padding: "10px 20px",
+              background: "#1a1a1a",
+              borderRadius: "8px",
+              color: "#fff",
+              fontSize: "13px",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            Kaart & Kampe
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

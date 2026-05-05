@@ -21,6 +21,8 @@ export default function FarmDetailPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [inspectionCount, setInspectionCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -50,6 +52,17 @@ export default function FarmDetailPage() {
     load();
   }, [supabase, farmId]);
 
+  async function handleRename() {
+    const trimmed = editName.trim();
+    if (!trimmed || !farm || trimmed === farm.name) {
+      setEditing(false);
+      return;
+    }
+    await supabase.from("farms" as never).update({ name: trimmed } as never).eq("id" as never, farmId as never);
+    setFarm({ ...farm, name: trimmed });
+    setEditing(false);
+  }
+
   if (loading) return <div style={{ color: "#999", fontSize: "14px" }}>Laai plaas...</div>;
   if (!farm) return <div style={{ color: "#999", fontSize: "14px" }}>Plaas nie gevind nie.</div>;
 
@@ -63,7 +76,52 @@ export default function FarmDetailPage() {
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
         <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>{farm.name}</h1>
+          {editing ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input
+                autoFocus
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRename();
+                  if (e.key === "Escape") setEditing(false);
+                }}
+                style={{
+                  fontSize: "24px",
+                  fontWeight: 700,
+                  color: "#1a1a1a",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  padding: "4px 10px",
+                  outline: "none",
+                  width: "300px",
+                }}
+              />
+              <button
+                onClick={handleRename}
+                style={{ padding: "6px 14px", background: "#1a1a1a", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+              >
+                Stoor
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                style={{ padding: "6px 14px", background: "#f5f5f0", color: "#666", border: "1px solid #ddd", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}
+              >
+                Kanselleer
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>{farm.name}</h1>
+              <button
+                onClick={() => { setEditName(farm.name); setEditing(true); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: "#999", padding: "4px" }}
+                title="Hernoem plaas"
+              >
+                ✎
+              </button>
+            </div>
+          )}
           {client && <p style={{ fontSize: "14px", color: "#999", margin: "4px 0 0" }}>{client.name}</p>}
         </div>
         <Link

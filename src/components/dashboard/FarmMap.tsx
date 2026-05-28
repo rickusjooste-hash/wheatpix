@@ -17,6 +17,14 @@ interface Block {
   sort_order: number;
 }
 
+interface PreviewBlock {
+  index: number;
+  name: string;
+  geometry: { lat: number; lng: number }[];
+  areaHa: number;
+  isChecked: boolean;
+}
+
 interface FarmMapProps {
   farmId: string;
   farmName: string;
@@ -26,6 +34,9 @@ interface FarmMapProps {
   onBlockUpdated: (blockId: string, geometry: { lat: number; lng: number }[], areaHa: number) => Promise<void>;
   onBlockSelected: (block: Block | null) => void;
   selectedBlockId: string | null;
+  previewBlocks?: PreviewBlock[];
+  activePreviewIndex?: number | null;
+  onPreviewBlockClicked?: (index: number) => void;
 }
 
 function calcHectares(latlngs: L.LatLng[]): number {
@@ -54,11 +65,16 @@ export default function FarmMap({
   onBlockUpdated,
   onBlockSelected,
   selectedBlockId,
+  previewBlocks,
+  activePreviewIndex,
+  onPreviewBlockClicked,
 }: FarmMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const blockLayersRef = useRef<Map<string, L.Polygon>>(new Map());
   const drawControlRef = useRef<L.Control.Draw | null>(null);
+  const previewLayersRef = useRef<Map<number, L.Polygon>>(new Map());
+  const labelLayersRef = useRef<L.Marker[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
 
   // Initialize map
@@ -153,12 +169,25 @@ export default function FarmMap({
     mapRef.current = map;
 
     return () => {
+      labelLayersRef.current.forEach((l) => map.removeLayer(l));
+      labelLayersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Render block polygons
+  // Hide draw controls during preview
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !drawControlRef.current) return;
+    if (previewBlocks && previewBlocks.length > 0) {
+      map.removeControl(drawControlRef.current);
+    } else {
+      map.addControl(drawControlRef.current);
+    }
+  }, [previewBlocks]);
+
+  // Render block polygons + preview polygons
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -167,8 +196,18 @@ export default function FarmMap({
     blockLayersRef.current.forEach((layer) => map.removeLayer(layer));
     blockLayersRef.current.clear();
 
-    const bounds: L.LatLng[] = [];
+    // Clear preview layers
+    previewLayersRef.current.forEach((layer) => map.removeLayer(layer));
+    previewLayersRef.current.clear();
 
+    // Clear labels
+    labelLayersRef.current.forEach((layer) => map.removeLayer(layer));
+    labelLayersRef.current = [];
+
+    const bounds: L.LatLng[] = [];
+    const inPreview = previewBlocks && previewBlocks.length > 0;
+
+    // Existing blocks (dimmed if in preview mode)
     blocks.forEach((block, i) => {
       if (!block.geometry || block.geometry.length < 3) return;
 
@@ -177,22 +216,23 @@ export default function FarmMap({
 
       const isSelected = block.id === selectedBlockId;
       const color = BLOCK_COLORS[i % BLOCK_COLORS.length];
+      const dimmed = inPreview;
 
       const polygon = L.polygon(latlngs, {
-        color: isSelected ? "#F5C842" : color,
-        weight: isSelected ? 3 : 2,
+        color: isSelected && !dimmed ? "#F5C842" : color,
+        weight: isSelected && !dimmed ? 3 : 2,
         fillColor: color,
-        fillOpacity: isSelected ? 0.3 : 0.15,
+        fillOpacity: dimmed ? 0.08 : isSelected ? 0.3 : 0.15,
+        opacity: dimmed ? 0.3 : 1,
       });
 
-      // Label
       const center = polygon.getBounds().getCenter();
       const label = L.divIcon({
         className: "",
         html: `<div style="
           font-size: 11px;
           font-weight: 700;
-          color: #F5EDDA;
+          color: ${dimmed ? "rgba(74,154,74,0.4)" : "#F5EDDA"};
           text-shadow: 0 1px 3px rgba(0,0,0,0.8);
           white-space: nowrap;
           font-family: 'JetBrains Mono', monospace;
@@ -201,18 +241,76 @@ export default function FarmMap({
         iconSize: [0, 0],
         iconAnchor: [0, 0],
       });
-      L.marker(center, { icon: label, interactive: false }).addTo(map);
+      const labelMarker = L.marker(center, { icon: label, interactive: false }).addTo(map);
+      labelLayersRef.current.push(labelMarker);
 
-      polygon.on("click", () => onBlockSelected(block));
+      if (!dimmed) {
+        polygon.on("click", () => onBlockSelected(block));
+      }
 
       polygon.addTo(map);
       blockLayersRef.current.set(block.id, polygon);
     });
 
+    // Preview blocks (gold dashed or solid if active)
+    if (previewBlocks) {
+      previewBlocks.forEach((pb) => {
+        if (!pb.isChecked) return;
+
+        const latlngs = pb.geometry.map((p) => L.latLng(p.lat, p.lng));
+        bounds.push(...latlngs);
+
+        const isActive = pb.index === activePreviewIndex;
+
+        const polygon = L.polygon(latlngs, {
+          color: "#F5C842",
+          weight: isActive ? 3 : 2,
+          fillColor: "#F5C842",
+          fillOpacity: isActive ? 0.25 : 0.1,
+          dashArray: isActive ? undefined : "8,4",
+        });
+
+        const center = polygon.getBounds().getCenter();
+        const label = L.divIcon({
+          className: "",
+          html: `<div style="
+            font-size: 10px;
+            font-weight: 700;
+            color: ${isActive ? "#fff" : "#F5C842"};
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            white-space: nowrap;
+            font-family: 'JetBrains Mono', monospace;
+            pointer-events: none;
+          ">${pb.name} · ${pb.areaHa.toFixed(1)}ha</div>`,
+          iconSize: [0, 0],
+          iconAnchor: [0, 0],
+        });
+        const labelMarker = L.marker(center, { icon: label, interactive: false }).addTo(map);
+        labelLayersRef.current.push(labelMarker);
+
+        polygon.on("click", () => {
+          onPreviewBlockClicked?.(pb.index);
+        });
+
+        polygon.addTo(map);
+        previewLayersRef.current.set(pb.index, polygon);
+      });
+    }
+
     if (bounds.length > 0) {
       map.fitBounds(L.latLngBounds(bounds).pad(0.1));
     }
-  }, [blocks, selectedBlockId, onBlockSelected]);
+  }, [blocks, selectedBlockId, onBlockSelected, previewBlocks, activePreviewIndex, onPreviewBlockClicked]);
+
+  // Pan to active preview block when selected from side panel
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || activePreviewIndex == null) return;
+    const layer = previewLayersRef.current.get(activePreviewIndex);
+    if (layer) {
+      map.fitBounds(layer.getBounds().pad(0.3));
+    }
+  }, [activePreviewIndex]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -261,6 +359,54 @@ export default function FarmMap({
         >
           Klik op die kaart om punte te plaas. Dubbelklik om te voltooi.
         </div>
+      )}
+
+      {previewBlocks && previewBlocks.length > 0 && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              bottom: "20px",
+              left: "12px",
+              zIndex: 1000,
+              background: "rgba(14,26,7,0.9)",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              border: "1px solid #2D5A1B",
+              fontSize: "11px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+              <div style={{ width: "18px", height: "3px", background: "#4a9a4a", opacity: 0.4 }} />
+              <span style={{ color: "rgba(245,237,218,0.5)" }}>Bestaande kampe</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+              <div style={{ width: "18px", height: "0", borderTop: "2px dashed #F5C842" }} />
+              <span style={{ color: "#F5C842" }}>Nuwe kampe (KML)</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ width: "18px", height: "3px", background: "#F5C842" }} />
+              <span style={{ color: "#fff" }}>Gekies</span>
+            </div>
+          </div>
+          <div
+            style={{
+              position: "absolute",
+              top: "12px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 1000,
+              background: "rgba(14,26,7,0.9)",
+              padding: "6px 14px",
+              borderRadius: "6px",
+              border: "1px solid #2D5A1B",
+              fontSize: "11px",
+              color: "rgba(245,237,218,0.7)",
+            }}
+          >
+            Klik op &apos;n kamp om te wysig
+          </div>
+        </>
       )}
     </div>
   );

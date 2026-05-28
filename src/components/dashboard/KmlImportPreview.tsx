@@ -51,7 +51,50 @@ export default function KmlImportPreview({
         </div>
       </div>
 
-      {/* Select all header */}
+      {/* Select all / none buttons */}
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          padding: "10px 20px",
+          borderBottom: "1px solid #f0f0ec",
+        }}
+      >
+        <button
+          onClick={() => onToggleAll(true)}
+          style={{
+            flex: 1,
+            padding: "6px",
+            background: allChecked ? "#2D5A1B" : "transparent",
+            color: allChecked ? "#F5EDDA" : "#666",
+            border: allChecked ? "1px solid #2D5A1B" : "1px solid #e8e8e4",
+            borderRadius: "4px",
+            fontSize: "11px",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Kies alles
+        </button>
+        <button
+          onClick={() => onToggleAll(false)}
+          style={{
+            flex: 1,
+            padding: "6px",
+            background: checkedCount === 0 ? "#666" : "transparent",
+            color: checkedCount === 0 ? "#fff" : "#666",
+            border: checkedCount === 0 ? "1px solid #666" : "1px solid #e8e8e4",
+            borderRadius: "4px",
+            fontSize: "11px",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Kies geen
+        </button>
+      </div>
+
+      {/* Column header */}
       <div
         style={{
           display: "flex",

@@ -52,6 +52,7 @@ export default function FarmMapPage() {
   const supabase = createClient();
 
   const [farmName, setFarmName] = useState("");
+  const [clientName, setClientName] = useState("");
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [seasons, setSeasons] = useState<Record<string, BlockSeason>>({});
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
@@ -68,10 +69,21 @@ export default function FarmMapPage() {
     async function load() {
       const { data: farm } = await supabase
         .from("farms" as never)
-        .select("name")
+        .select("name, client_id")
         .eq("id" as never, farmId as never)
         .single();
-      if (farm) setFarmName((farm as { name: string }).name);
+      if (farm) {
+        const f = farm as { name: string; client_id: string | null };
+        setFarmName(f.name);
+        if (f.client_id) {
+          const { data: cd } = await supabase
+            .from("clients" as never)
+            .select("name")
+            .eq("id" as never, f.client_id as never)
+            .single();
+          if (cd) setClientName((cd as { name: string }).name);
+        }
+      }
 
       const { data: blockData } = await supabase
         .from("blocks" as never)
@@ -380,6 +392,9 @@ export default function FarmMapPage() {
               <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", margin: "8px 0 0" }}>
                 Kaart
               </h2>
+              {clientName && (
+                <div style={{ fontSize: "12px", color: "#999", marginTop: "2px" }}>{clientName}</div>
+              )}
             </div>
             <div style={{ padding: "20px" }}>
               <div style={{ fontSize: "12px", fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>

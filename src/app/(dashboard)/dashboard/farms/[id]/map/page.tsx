@@ -57,6 +57,7 @@ export default function FarmMapPage() {
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [cultivarOptions, setCultivarOptions] = useState<string[]>([]);
   const [importState, setImportState] = useState<"idle" | "previewing" | "importing">("idle");
   const [previewBlocks, setPreviewBlocks] = useState<KmlPreviewBlock[]>([]);
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null);
@@ -90,6 +91,16 @@ export default function FarmMapPage() {
           sm[s.block_id] = s;
         }
         setSeasons(sm);
+      }
+
+      const { data: cropData } = await supabase
+        .from("block_seasons" as never)
+        .select("cultivar");
+      if (cropData) {
+        const cd = cropData as unknown as { cultivar: string | null }[];
+        setCultivarOptions(
+          [...new Set(cd.map((c) => c.cultivar).filter(Boolean) as string[])].sort()
+        );
       }
 
       setLoading(false);
@@ -320,6 +331,7 @@ export default function FarmMapPage() {
             fileName={kmlFileName}
             previewBlocks={previewBlocks}
             activeIndex={activePreviewIndex}
+            cultivarOptions={cultivarOptions}
             onToggleCheck={handleToggleCheck}
             onToggleAll={handleToggleAll}
             onSelectBlock={handleSelectPreviewBlock}

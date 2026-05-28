@@ -15,6 +15,7 @@ interface KmlImportPreviewProps {
   fileName: string;
   previewBlocks: KmlPreviewBlock[];
   activeIndex: number | null;
+  cultivarOptions: string[];
   onToggleCheck: (index: number) => void;
   onToggleAll: (checked: boolean) => void;
   onSelectBlock: (index: number | null) => void;
@@ -28,6 +29,7 @@ export default function KmlImportPreview({
   fileName,
   previewBlocks,
   activeIndex,
+  cultivarOptions,
   onToggleCheck,
   onToggleAll,
   onSelectBlock,
@@ -204,9 +206,10 @@ export default function KmlImportPreview({
                     <div style={{ fontSize: "10px", color: "#999", marginBottom: "3px" }}>Kultivar</div>
                     <input
                       type="text"
+                      list="kml-cultivar-options"
                       value={block.cultivar || ""}
                       onChange={(e) => onUpdateBlock(i, { cultivar: e.target.value || null })}
-                      placeholder="Opsioneel"
+                      placeholder="Kies of tik"
                       style={{
                         width: "100%",
                         padding: "6px 8px",
@@ -362,6 +365,12 @@ export default function KmlImportPreview({
           {importing ? "Importeer..." : `Importeer ${checkedCount}`}
         </button>
       </div>
+
+      <datalist id="kml-cultivar-options">
+        {cultivarOptions.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
     </div>
   );
 }

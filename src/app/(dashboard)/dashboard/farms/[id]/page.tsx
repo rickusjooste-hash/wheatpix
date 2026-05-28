@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { HelpButton, HelpPanel, useHelp } from "@/components/dashboard/HelpPanel";
 
 interface Farm { id: string; name: string; client_id: string | null }
 interface Block { id: string; name: string; area_hectares: number | null; is_active: boolean; sort_order: number }
@@ -23,6 +24,7 @@ export default function FarmDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const help = useHelp();
 
   useEffect(() => {
     async function load() {
@@ -133,7 +135,8 @@ export default function FarmDetailPage() {
           )}
           {client && <p style={{ fontSize: "14px", color: "#999", margin: "4px 0 0" }}>{client.name}</p>}
         </div>
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <HelpButton onClick={help.toggle} active={help.showHelp} />
           <Link
             href={`/dashboard/farms/${farmId}/seasons`}
             style={{
@@ -165,6 +168,8 @@ export default function FarmDetailPage() {
           </Link>
         </div>
       </div>
+
+      {help.showHelp && <HelpPanel onClose={help.close} />}
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "36px" }}>

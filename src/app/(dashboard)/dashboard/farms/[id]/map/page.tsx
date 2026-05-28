@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { parseKml } from "@/lib/kml-parser";
 import type { KmlPreviewBlock } from "@/components/dashboard/KmlImportPreview";
+import { HelpButton, HelpPanel, useHelp } from "@/components/dashboard/HelpPanel";
 import * as turfHelpers from "@turf/helpers";
 import turfArea from "@turf/area";
 
@@ -64,6 +65,9 @@ export default function FarmMapPage() {
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null);
   const [kmlFileName, setKmlFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [clientFarms, setClientFarms] = useState<{ id: string; name: string }[]>([]);
+  const [selectedImportFarmId, setSelectedImportFarmId] = useState("");
+  const help = useHelp();
 
   useEffect(() => {
     async function load() {
@@ -82,6 +86,17 @@ export default function FarmMapPage() {
             .eq("id" as never, f.client_id as never)
             .single();
           if (cd) setClientName((cd as { name: string }).name);
+
+          const { data: clientFarmsData } = await supabase
+            .from("farms" as never)
+            .select("id, name" as never)
+            .eq("client_id" as never, f.client_id as never)
+            .order("name" as never);
+          if (clientFarmsData) {
+            setClientFarms(clientFarmsData as unknown as { id: string; name: string }[]);
+          }
+        } else {
+          setClientFarms([{ id: farmId, name: f.name }]);
         }
       }
 
@@ -176,19 +191,14 @@ export default function FarmMapPage() {
         const text = ev.target?.result as string;
         const parsed = parseKml(text);
 
-        const existingNames = new Set(blocks.map((b) => b.name.toLowerCase()));
-
-        const preview: KmlPreviewBlock[] = parsed.map((p) => {
-          const isDuplicate = existingNames.has(p.name.toLowerCase());
-          return {
-            name: p.name,
-            geometry: p.geometry,
-            areaHa: parseFloat(calcHectares(p.geometry).toFixed(2)),
-            cultivar: p.cultivar,
-            isChecked: !isDuplicate,
-            isDuplicate,
-          };
-        });
+        const preview: KmlPreviewBlock[] = parsed.map((p) => ({
+          name: p.name,
+          geometry: p.geometry,
+          areaHa: parseFloat(calcHectares(p.geometry).toFixed(2)),
+          cultivar: p.cultivar,
+          isChecked: false,
+          isDuplicate: false,
+        }));
 
         setPreviewBlocks(preview);
         setActivePreviewIndex(null);
@@ -199,7 +209,7 @@ export default function FarmMapPage() {
       // Reset input so the same file can be re-selected
       e.target.value = "";
     },
-    [blocks]
+    []
   );
 
   const handleToggleCheck = useCallback((index: number) => {
@@ -230,20 +240,31 @@ export default function FarmMapPage() {
     setPreviewBlocks([]);
     setActivePreviewIndex(null);
     setKmlFileName("");
+    setSelectedImportFarmId("");
   }, []);
 
   const handleConfirmImport = useCallback(async () => {
+    const targetFarmId = selectedImportFarmId;
+    if (!targetFarmId) return;
+
     const toImport = previewBlocks.filter((b) => b.isChecked);
     if (toImport.length === 0) return;
 
     setImportState("importing");
 
+    const { count } = await supabase
+      .from("blocks" as never)
+      .select("id", { count: "exact", head: true } as never)
+      .eq("farm_id" as never, targetFarmId as never);
+
+    const startOrder = count ?? 0;
+
     const rows = toImport.map((b, i) => ({
-      farm_id: farmId,
+      farm_id: targetFarmId,
       name: b.name,
       geometry: b.geometry,
       area_hectares: b.areaHa,
-      sort_order: blocks.length + i,
+      sort_order: startOrder + i,
       is_active: true,
     }));
 
@@ -252,15 +273,14 @@ export default function FarmMapPage() {
       .insert(rows as never)
       .select("id, name, geometry, area_hectares, is_active, sort_order");
 
-    if (error) {
-      alert(`Fout: ${error.message}`);
+    if (error || !data || (data as unknown[]).length === 0) {
+      alert(`Fout: ${error?.message || "Blokke kon nie gestoor word nie. Kyk na toegangsregte."}`);
       setImportState("previewing");
       return;
     }
 
     const insertedBlocks = data as unknown as Block[];
 
-    // Create block_seasons for any blocks with a cultivar
     const seasonRows = toImport
       .map((b, i) => {
         if (!b.cultivar) return null;
@@ -279,12 +299,25 @@ export default function FarmMapPage() {
       await supabase.from("block_seasons" as never).insert(seasonRows as never);
     }
 
-    setBlocks((prev) => [...prev, ...insertedBlocks]);
-    setImportState("idle");
-    setPreviewBlocks([]);
-    setActivePreviewIndex(null);
-    setKmlFileName("");
-  }, [previewBlocks, farmId, blocks.length, supabase]);
+    if (targetFarmId === farmId) {
+      setBlocks((prev) => [...prev, ...insertedBlocks]);
+    }
+
+    const remaining = previewBlocks.filter((b) => !b.isChecked);
+
+    if (remaining.length === 0) {
+      setImportState("idle");
+      setPreviewBlocks([]);
+      setActivePreviewIndex(null);
+      setKmlFileName("");
+      setSelectedImportFarmId("");
+    } else {
+      setPreviewBlocks(remaining);
+      setActivePreviewIndex(null);
+      setImportState("previewing");
+      setSelectedImportFarmId("");
+    }
+  }, [previewBlocks, selectedImportFarmId, farmId, supabase]);
 
   if (loading) {
     return <div style={{ color: "#999", fontSize: "14px" }}>Laai kaart...</div>;
@@ -324,6 +357,7 @@ export default function FarmMapPage() {
           }
           activePreviewIndex={activePreviewIndex}
           onPreviewBlockClicked={handleSelectPreviewBlock}
+          onPreviewBlockToggled={handleToggleCheck}
         />
       </div>
 
@@ -344,6 +378,9 @@ export default function FarmMapPage() {
             previewBlocks={previewBlocks}
             activeIndex={activePreviewIndex}
             cultivarOptions={cultivarOptions}
+            clientFarms={clientFarms}
+            selectedFarmId={selectedImportFarmId}
+            onFarmChange={setSelectedImportFarmId}
             onToggleCheck={handleToggleCheck}
             onToggleAll={handleToggleAll}
             onSelectBlock={handleSelectPreviewBlock}
@@ -383,17 +420,27 @@ export default function FarmMapPage() {
         ) : (
           <div>
             <div style={{ padding: "20px", borderBottom: "1px solid #f0f0ec" }}>
-              <Link
-                href={`/dashboard/farms/${farmId}`}
-                style={{ fontSize: "13px", color: "#999", textDecoration: "none" }}
-              >
-                ← {farmName}
-              </Link>
-              <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", margin: "8px 0 0" }}>
-                Kaart
-              </h2>
-              {clientName && (
-                <div style={{ fontSize: "12px", color: "#999", marginTop: "2px" }}>{clientName}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  {clientName && (
+                    <div style={{ fontSize: "14px", color: "#999", marginBottom: "4px" }}>{clientName}</div>
+                  )}
+                  <Link
+                    href={`/dashboard/farms/${farmId}`}
+                    style={{ fontSize: "13px", color: "#999", textDecoration: "none" }}
+                  >
+                    ← {farmName}
+                  </Link>
+                  <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", margin: "8px 0 0" }}>
+                    Kaart
+                  </h2>
+                </div>
+                <HelpButton onClick={help.toggle} active={help.showHelp} />
+              </div>
+              {help.showHelp && (
+                <div style={{ marginTop: "12px" }}>
+                  <HelpPanel onClose={help.close} />
+                </div>
               )}
             </div>
             <div style={{ padding: "20px" }}>

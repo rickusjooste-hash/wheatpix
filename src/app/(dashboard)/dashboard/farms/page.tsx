@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { HelpButton, HelpPanel, useHelp } from "@/components/dashboard/HelpPanel";
 
 interface Farm {
   id: string;
@@ -21,6 +22,7 @@ export default function FarmsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const help = useHelp();
   const [newName, setNewName] = useState("");
   const [newClientId, setNewClientId] = useState("");
 
@@ -128,22 +130,27 @@ export default function FarmsPage() {
             {farms.length} plas{farms.length !== 1 ? "e" : ""} geregistreer
           </p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          style={{
-            padding: "10px 20px",
-            background: "#1a1a1a",
-            border: "none",
-            borderRadius: "8px",
-            color: "#fff",
-            fontSize: "13px",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          + Nuwe Plaas
-        </button>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <HelpButton onClick={help.toggle} active={help.showHelp} />
+          <button
+            onClick={() => setShowCreate(true)}
+            style={{
+              padding: "10px 20px",
+              background: "#1a1a1a",
+              border: "none",
+              borderRadius: "8px",
+              color: "#fff",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            + Nuwe Plaas
+          </button>
+        </div>
       </div>
+
+      {help.showHelp && <HelpPanel onClose={help.close} />}
 
       {showCreate && (
         <div

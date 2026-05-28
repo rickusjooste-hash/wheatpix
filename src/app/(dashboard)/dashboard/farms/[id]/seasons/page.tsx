@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { HelpButton, HelpPanel, useHelp } from "@/components/dashboard/HelpPanel";
 
 interface Farm {
   id: string;
@@ -50,6 +51,7 @@ export default function SeasonsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [rollingOver, setRollingOver] = useState(false);
+  const help = useHelp();
 
   useEffect(() => {
     async function load() {
@@ -74,15 +76,15 @@ export default function SeasonsPage() {
           .from("block_seasons" as never)
           .select("season")
           .in("block_id" as never, blockIds as never);
-        if (allSeasons) {
-          const years = [...new Set((allSeasons as unknown as { season: number }[]).map((s) => s.season))].sort(
-            (a, b) => b - a
-          );
-          setAvailableYears(years.length > 0 ? years : [currentYear]);
-          if (years.length > 0 && !years.includes(selectedYear)) {
-            setSelectedYear(years[0]);
-          }
+        const years = allSeasons
+          ? [...new Set((allSeasons as unknown as { season: number }[]).map((s) => s.season))].sort((a, b) => b - a)
+          : [];
+        setAvailableYears(years.length > 0 ? years : [currentYear]);
+        if (years.length > 0 && !years.includes(selectedYear)) {
+          setSelectedYear(years[0]);
         }
+      } else {
+        setAvailableYears([currentYear]);
       }
 
       // Get distinct crop and cultivar values for suggestions
@@ -152,25 +154,25 @@ export default function SeasonsPage() {
   async function rollOverToYear(targetYear: number) {
     setRollingOver(true);
 
-    // Find the most recent year that has data
-    const sourceYear = availableYears.find((y) => y < targetYear) || availableYears[0];
+    const sourceYear = availableYears.find((y) => y < targetYear);
     const blockIds = blocks.map((b) => b.id);
 
-    // Load source season data
-    const { data: sourceData } = await supabase
-      .from("block_seasons" as never)
-      .select("block_id, crop, cultivar")
-      .in("block_id" as never, blockIds as never)
-      .eq("season" as never, sourceYear as never);
-
     const sourceMap: Record<string, { crop: string | null; cultivar: string | null }> = {};
-    if (sourceData) {
-      for (const s of sourceData as unknown as {
-        block_id: string;
-        crop: string | null;
-        cultivar: string | null;
-      }[]) {
-        sourceMap[s.block_id] = { crop: s.crop, cultivar: s.cultivar };
+    if (sourceYear && blockIds.length > 0) {
+      const { data: sourceData } = await supabase
+        .from("block_seasons" as never)
+        .select("block_id, crop, cultivar")
+        .in("block_id" as never, blockIds as never)
+        .eq("season" as never, sourceYear as never);
+
+      if (sourceData) {
+        for (const s of sourceData as unknown as {
+          block_id: string;
+          crop: string | null;
+          cultivar: string | null;
+        }[]) {
+          sourceMap[s.block_id] = { crop: s.crop, cultivar: s.cultivar };
+        }
       }
     }
 
@@ -186,10 +188,24 @@ export default function SeasonsPage() {
       }));
 
     if (rows.length > 0) {
-      await supabase.from("block_seasons" as never).insert(rows as never);
+      const { data: inserted, error } = await supabase
+        .from("block_seasons" as never)
+        .upsert(rows as never, { onConflict: "block_id,season" } as never)
+        .select("id, block_id, season, crop, cultivar, status");
+
+      if (error) {
+        alert(`Fout: ${error.message}`);
+        setRollingOver(false);
+        return;
+      }
+
+      if (inserted) {
+        const m: Record<string, BlockSeason> = {};
+        for (const s of inserted as unknown as BlockSeason[]) m[s.block_id] = s;
+        setSeasons(m);
+      }
     }
 
-    // Update state
     if (!availableYears.includes(targetYear)) {
       setAvailableYears((prev) => [targetYear, ...prev].sort((a, b) => b - a));
     }
@@ -235,6 +251,7 @@ export default function SeasonsPage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <HelpButton onClick={help.toggle} active={help.showHelp} />
           {/* Year selector */}
           <select
             value={selectedYear}
@@ -273,11 +290,13 @@ export default function SeasonsPage() {
                 whiteSpace: "nowrap",
               }}
             >
-              {rollingOver ? "Skep..." : `+ Start ${nextYear} Seisoen`}
+              {rollingOver ? "Skep..." : `+ Begin ${nextYear} Seisoen`}
             </button>
           )}
         </div>
       </div>
+
+      {help.showHelp && <HelpPanel onClose={help.close} />}
 
       {!hasSeasonData ? (
         <div
@@ -308,9 +327,7 @@ export default function SeasonsPage() {
           >
             {rollingOver
               ? "Skep..."
-              : availableYears.length > 0
-              ? `Kopieer van ${availableYears[0]} na ${selectedYear}`
-              : `Start ${selectedYear} Seisoen`}
+              : `Begin ${selectedYear} Seisoen`}
           </button>
         </div>
       ) : (

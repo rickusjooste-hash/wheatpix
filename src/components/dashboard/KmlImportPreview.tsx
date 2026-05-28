@@ -16,6 +16,9 @@ interface KmlImportPreviewProps {
   previewBlocks: KmlPreviewBlock[];
   activeIndex: number | null;
   cultivarOptions: string[];
+  clientFarms: { id: string; name: string }[];
+  selectedFarmId: string;
+  onFarmChange: (farmId: string) => void;
   onToggleCheck: (index: number) => void;
   onToggleAll: (checked: boolean) => void;
   onSelectBlock: (index: number | null) => void;
@@ -30,6 +33,9 @@ export default function KmlImportPreview({
   previewBlocks,
   activeIndex,
   cultivarOptions,
+  clientFarms,
+  selectedFarmId,
+  onFarmChange,
   onToggleCheck,
   onToggleAll,
   onSelectBlock,
@@ -49,8 +55,36 @@ export default function KmlImportPreview({
           KML Voorskou
         </h2>
         <div style={{ fontSize: "12px", color: "#999", marginTop: "4px" }}>
-          {previewBlocks.length} kampe gevind · {fileName}
+          {previewBlocks.length} kampe oor · {fileName}
         </div>
+      </div>
+
+      {/* Farm selector */}
+      <div style={{ padding: "12px 20px", borderBottom: "1px solid #f0f0ec" }}>
+        <div style={{ fontSize: "10px", color: "#999", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
+          Kies plaas
+        </div>
+        <select
+          value={selectedFarmId}
+          onChange={(e) => onFarmChange(e.target.value)}
+          disabled={importing}
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            border: "1px solid #e8e8e4",
+            borderRadius: "6px",
+            fontSize: "13px",
+            color: selectedFarmId ? "#1a1a1a" : "#999",
+            background: "#fff",
+            boxSizing: "border-box" as const,
+            cursor: importing ? "not-allowed" : "pointer",
+          }}
+        >
+          <option value="">-- Kies &apos;n plaas --</option>
+          {clientFarms.map((f) => (
+            <option key={f.id} value={f.id}>{f.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Select all / none buttons */}
@@ -349,17 +383,17 @@ export default function KmlImportPreview({
         </button>
         <button
           onClick={onConfirm}
-          disabled={importing || checkedCount === 0}
+          disabled={importing || checkedCount === 0 || !selectedFarmId}
           style={{
             flex: 1,
             padding: "10px",
-            background: checkedCount === 0 ? "#ccc" : "#2D5A1B",
+            background: (checkedCount === 0 || !selectedFarmId) ? "#ccc" : "#2D5A1B",
             border: "none",
             borderRadius: "6px",
             fontSize: "13px",
             color: "#F5EDDA",
             fontWeight: 600,
-            cursor: importing || checkedCount === 0 ? "not-allowed" : "pointer",
+            cursor: (importing || checkedCount === 0 || !selectedFarmId) ? "not-allowed" : "pointer",
           }}
         >
           {importing ? "Importeer..." : `Importeer ${checkedCount}`}

@@ -37,6 +37,7 @@ interface FarmMapProps {
   previewBlocks?: PreviewBlock[];
   activePreviewIndex?: number | null;
   onPreviewBlockClicked?: (index: number) => void;
+  onPreviewBlockToggled?: (index: number) => void;
 }
 
 function calcHectares(latlngs: L.LatLng[]): number {
@@ -68,6 +69,7 @@ export default function FarmMap({
   previewBlocks,
   activePreviewIndex,
   onPreviewBlockClicked,
+  onPreviewBlockToggled,
 }: FarmMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -75,6 +77,8 @@ export default function FarmMap({
   const drawControlRef = useRef<L.Control.Draw | null>(null);
   const previewLayersRef = useRef<Map<number, L.Polygon>>(new Map());
   const labelLayersRef = useRef<L.Marker[]>([]);
+  const hasInitialFitRef = useRef(false);
+  const lastBlockCountRef = useRef(0);
   const [isDrawing, setIsDrawing] = useState(false);
 
   // Initialize map
@@ -255,8 +259,6 @@ export default function FarmMap({
     // Preview blocks (gold dashed or solid if active)
     if (previewBlocks) {
       previewBlocks.forEach((pb) => {
-        if (!pb.isChecked) return;
-
         const latlngs = pb.geometry.map((p) => L.latLng(p.lat, p.lng));
         bounds.push(...latlngs);
 
@@ -264,10 +266,11 @@ export default function FarmMap({
 
         const polygon = L.polygon(latlngs, {
           color: "#F5C842",
-          weight: isActive ? 3 : 2,
+          weight: isActive ? 3 : pb.isChecked ? 2 : 1,
           fillColor: "#F5C842",
-          fillOpacity: isActive ? 0.25 : 0.1,
+          fillOpacity: isActive ? 0.25 : pb.isChecked ? 0.1 : 0.03,
           dashArray: isActive ? undefined : "8,4",
+          opacity: pb.isChecked ? 1 : 0.4,
         });
 
         const center = polygon.getBounds().getCenter();
@@ -276,7 +279,7 @@ export default function FarmMap({
           html: `<div style="
             font-size: 10px;
             font-weight: 700;
-            color: ${isActive ? "#fff" : "#F5C842"};
+            color: ${isActive ? "#fff" : pb.isChecked ? "#F5C842" : "rgba(245,200,66,0.4)"};
             text-shadow: 0 1px 3px rgba(0,0,0,0.8);
             white-space: nowrap;
             font-family: 'JetBrains Mono', monospace;
@@ -288,8 +291,12 @@ export default function FarmMap({
         const labelMarker = L.marker(center, { icon: label, interactive: false }).addTo(map);
         labelLayersRef.current.push(labelMarker);
 
-        polygon.on("click", () => {
-          onPreviewBlockClicked?.(pb.index);
+        polygon.on("click", (e: L.LeafletMouseEvent) => {
+          if (e.originalEvent.ctrlKey || e.originalEvent.metaKey) {
+            onPreviewBlockToggled?.(pb.index);
+          } else {
+            onPreviewBlockClicked?.(pb.index);
+          }
         });
 
         polygon.addTo(map);
@@ -297,10 +304,15 @@ export default function FarmMap({
       });
     }
 
-    if (bounds.length > 0) {
+    const blockCount = blocks.length + (previewBlocks?.length ?? 0);
+    if (bounds.length > 0 && !hasInitialFitRef.current) {
+      map.fitBounds(L.latLngBounds(bounds).pad(0.1));
+      hasInitialFitRef.current = true;
+    } else if (bounds.length > 0 && blockCount !== lastBlockCountRef.current) {
       map.fitBounds(L.latLngBounds(bounds).pad(0.1));
     }
-  }, [blocks, selectedBlockId, onBlockSelected, previewBlocks, activePreviewIndex, onPreviewBlockClicked]);
+    lastBlockCountRef.current = blockCount;
+  }, [blocks, selectedBlockId, onBlockSelected, previewBlocks, activePreviewIndex, onPreviewBlockClicked, onPreviewBlockToggled]);
 
   // Pan to active preview block when selected from side panel
   useEffect(() => {

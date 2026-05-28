@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { parseKml } from "@/lib/kml-parser";
+import type { KmlPreviewBlock } from "@/components/dashboard/KmlImportPreview";
+import * as turfHelpers from "@turf/helpers";
+import turfArea from "@turf/area";
 
 const FarmMap = dynamic(() => import("@/components/dashboard/FarmMap"), {
   ssr: false,
@@ -14,6 +18,11 @@ const FarmMap = dynamic(() => import("@/components/dashboard/FarmMap"), {
     </div>
   ),
 });
+
+const KmlImportPreview = dynamic(
+  () => import("@/components/dashboard/KmlImportPreview"),
+  { ssr: false }
+);
 
 interface Block {
   id: string;
@@ -30,6 +39,13 @@ interface BlockSeason {
   cultivar: string | null;
 }
 
+function calcHectares(geometry: { lat: number; lng: number }[]): number {
+  const coords = geometry.map((p) => [p.lng, p.lat] as [number, number]);
+  coords.push(coords[0]);
+  const polygon = turfHelpers.polygon([coords]);
+  return turfArea(polygon) / 10000;
+}
+
 export default function FarmMapPage() {
   const params = useParams();
   const farmId = params.id as string;
@@ -40,6 +56,12 @@ export default function FarmMapPage() {
   const [seasons, setSeasons] = useState<Record<string, BlockSeason>>({});
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [importState, setImportState] = useState<"idle" | "previewing" | "importing">("idle");
+  const [previewBlocks, setPreviewBlocks] = useState<KmlPreviewBlock[]>([]);
+  const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null);
+  const [kmlFileName, setKmlFileName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -119,12 +141,143 @@ export default function FarmMapPage() {
     setSelectedBlock(block);
   }, []);
 
+  const handleKmlFileSelected = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setKmlFileName(file.name);
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        const parsed = parseKml(text);
+
+        const existingNames = new Set(blocks.map((b) => b.name.toLowerCase()));
+
+        const preview: KmlPreviewBlock[] = parsed.map((p) => {
+          const isDuplicate = existingNames.has(p.name.toLowerCase());
+          return {
+            name: p.name,
+            geometry: p.geometry,
+            areaHa: parseFloat(calcHectares(p.geometry).toFixed(2)),
+            cultivar: p.cultivar,
+            isChecked: !isDuplicate,
+            isDuplicate,
+          };
+        });
+
+        setPreviewBlocks(preview);
+        setActivePreviewIndex(null);
+        setImportState("previewing");
+      };
+      reader.readAsText(file);
+
+      // Reset input so the same file can be re-selected
+      e.target.value = "";
+    },
+    [blocks]
+  );
+
+  const handleToggleCheck = useCallback((index: number) => {
+    setPreviewBlocks((prev) =>
+      prev.map((b, i) => (i === index ? { ...b, isChecked: !b.isChecked } : b))
+    );
+  }, []);
+
+  const handleToggleAll = useCallback((checked: boolean) => {
+    setPreviewBlocks((prev) => prev.map((b) => ({ ...b, isChecked: checked })));
+  }, []);
+
+  const handleSelectPreviewBlock = useCallback((index: number | null) => {
+    setActivePreviewIndex(index);
+  }, []);
+
+  const handleUpdatePreviewBlock = useCallback(
+    (index: number, updates: { name?: string; cultivar?: string | null }) => {
+      setPreviewBlocks((prev) =>
+        prev.map((b, i) => (i === index ? { ...b, ...updates } : b))
+      );
+    },
+    []
+  );
+
+  const handleCancelImport = useCallback(() => {
+    setImportState("idle");
+    setPreviewBlocks([]);
+    setActivePreviewIndex(null);
+    setKmlFileName("");
+  }, []);
+
+  const handleConfirmImport = useCallback(async () => {
+    const toImport = previewBlocks.filter((b) => b.isChecked);
+    if (toImport.length === 0) return;
+
+    setImportState("importing");
+
+    const rows = toImport.map((b, i) => ({
+      farm_id: farmId,
+      name: b.name,
+      geometry: b.geometry,
+      area_hectares: b.areaHa,
+      sort_order: blocks.length + i,
+      is_active: true,
+    }));
+
+    const { data, error } = await supabase
+      .from("blocks" as never)
+      .insert(rows as never)
+      .select("id, name, geometry, area_hectares, is_active, sort_order");
+
+    if (error) {
+      alert(`Fout: ${error.message}`);
+      setImportState("previewing");
+      return;
+    }
+
+    const insertedBlocks = data as unknown as Block[];
+
+    // Create block_seasons for any blocks with a cultivar
+    const seasonRows = toImport
+      .map((b, i) => {
+        if (!b.cultivar) return null;
+        const insertedBlock = insertedBlocks[i];
+        if (!insertedBlock) return null;
+        return {
+          block_id: insertedBlock.id,
+          season: new Date().getFullYear(),
+          cultivar: b.cultivar,
+          status: "planned",
+        };
+      })
+      .filter(Boolean);
+
+    if (seasonRows.length > 0) {
+      await supabase.from("block_seasons" as never).insert(seasonRows as never);
+    }
+
+    setBlocks((prev) => [...prev, ...insertedBlocks]);
+    setImportState("idle");
+    setPreviewBlocks([]);
+    setActivePreviewIndex(null);
+    setKmlFileName("");
+  }, [previewBlocks, farmId, blocks.length, supabase]);
+
   if (loading) {
     return <div style={{ color: "#999", fontSize: "14px" }}>Laai kaart...</div>;
   }
 
   return (
     <div style={{ display: "flex", height: "calc(100vh - 80px)", margin: "-40px -48px" }}>
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".kml"
+        onChange={handleKmlFileSelected}
+        style={{ display: "none" }}
+      />
+
       {/* Map */}
       <div style={{ flex: 1, position: "relative" }}>
         <FarmMap
@@ -135,6 +288,19 @@ export default function FarmMapPage() {
           onBlockUpdated={handleBlockUpdated}
           onBlockSelected={handleBlockSelected}
           selectedBlockId={selectedBlock?.id || null}
+          previewBlocks={
+            importState !== "idle"
+              ? previewBlocks.map((b, i) => ({
+                  index: i,
+                  name: b.name,
+                  geometry: b.geometry,
+                  areaHa: b.areaHa,
+                  isChecked: b.isChecked,
+                }))
+              : undefined
+          }
+          activePreviewIndex={activePreviewIndex}
+          onPreviewBlockClicked={handleSelectPreviewBlock}
         />
       </div>
 
@@ -149,19 +315,20 @@ export default function FarmMapPage() {
           overflow: "auto",
         }}
       >
-        <div style={{ padding: "20px", borderBottom: "1px solid #f0f0ec" }}>
-          <Link
-            href={`/dashboard/farms/${farmId}`}
-            style={{ fontSize: "13px", color: "#999", textDecoration: "none" }}
-          >
-            ← {farmName}
-          </Link>
-          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", margin: "8px 0 0" }}>
-            Kaart
-          </h2>
-        </div>
-
-        {selectedBlock ? (
+        {importState !== "idle" ? (
+          <KmlImportPreview
+            fileName={kmlFileName}
+            previewBlocks={previewBlocks}
+            activeIndex={activePreviewIndex}
+            onToggleCheck={handleToggleCheck}
+            onToggleAll={handleToggleAll}
+            onSelectBlock={handleSelectPreviewBlock}
+            onUpdateBlock={handleUpdatePreviewBlock}
+            onConfirm={handleConfirmImport}
+            onCancel={handleCancelImport}
+            importing={importState === "importing"}
+          />
+        ) : selectedBlock ? (
           <div style={{ padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
@@ -190,42 +357,80 @@ export default function FarmMapPage() {
             )}
           </div>
         ) : (
-          <div style={{ padding: "20px" }}>
-            <div style={{ fontSize: "12px", fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>
-              Kampe ({blocks.length})
-            </div>
-            {blocks.map((b, i) => (
-              <button
-                key={b.id}
-                onClick={() => setSelectedBlock(b)}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  width: "100%",
-                  padding: "12px",
-                  marginBottom: "4px",
-                  background: "transparent",
-                  border: "none",
-                  borderBottom: i < blocks.length - 1 ? "1px solid #f0f0ec" : "none",
-                  borderRadius: 0,
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
+          <div>
+            <div style={{ padding: "20px", borderBottom: "1px solid #f0f0ec" }}>
+              <Link
+                href={`/dashboard/farms/${farmId}`}
+                style={{ fontSize: "13px", color: "#999", textDecoration: "none" }}
               >
-                <span style={{ fontSize: "14px", fontWeight: 500, color: "#1a1a1a" }}>{b.name}</span>
-                {b.area_hectares && (
-                  <span style={{ fontSize: "12px", color: "#999", fontFamily: "var(--font-jetbrains), monospace" }}>
-                    {b.area_hectares.toFixed(1)} ha
-                  </span>
-                )}
-              </button>
-            ))}
-            {blocks.length === 0 && (
-              <div style={{ fontSize: "13px", color: "#bbb", textAlign: "center", padding: "24px 0" }}>
-                Gebruik die teken-instrument op die kaart om kampe by te voeg.
+                ← {farmName}
+              </Link>
+              <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", margin: "8px 0 0" }}>
+                Kaart
+              </h2>
+            </div>
+            <div style={{ padding: "20px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>
+                Kampe ({blocks.length})
               </div>
-            )}
+              {blocks.map((b, i) => (
+                <button
+                  key={b.id}
+                  onClick={() => setSelectedBlock(b)}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    width: "100%",
+                    padding: "12px",
+                    marginBottom: "4px",
+                    background: "transparent",
+                    border: "none",
+                    borderBottom: i < blocks.length - 1 ? "1px solid #f0f0ec" : "none",
+                    borderRadius: 0,
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span style={{ fontSize: "14px", fontWeight: 500, color: "#1a1a1a" }}>{b.name}</span>
+                  {b.area_hectares && (
+                    <span style={{ fontSize: "12px", color: "#999", fontFamily: "var(--font-jetbrains), monospace" }}>
+                      {b.area_hectares.toFixed(1)} ha
+                    </span>
+                  )}
+                </button>
+              ))}
+              {blocks.length === 0 && (
+                <div style={{ fontSize: "13px", color: "#bbb", textAlign: "center", padding: "24px 0" }}>
+                  Gebruik die teken-instrument op die kaart om kampe by te voeg.
+                </div>
+              )}
+
+              {/* Import KML button */}
+              <div style={{ borderTop: "1px solid #e8e8e4", paddingTop: "16px", marginTop: "12px", textAlign: "center" }}>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "8px 16px",
+                    background: "#2D5A1B",
+                    color: "#F5EDDA",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Importeer KML
+                </button>
+                <div style={{ fontSize: "11px", color: "#bbb", marginTop: "6px" }}>
+                  Voeg kampe by uit &apos;n KML-lêer
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
